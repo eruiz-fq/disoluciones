@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disolucions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- KaTeX para renderizado matemático impecable de factores de conversión -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f6fb;
+            color: #1e293b;
+        }
+        .font-mono-num {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .pill-shadow {
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+        }
+        .katex-display {
+            margin: 0.75em 0 !important;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.25rem 0;
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(6px) scale(0.99); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-pop {
+            animation: popIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        /* Transición suave de escala y color para el matraz aforado SVG */
+        .flask-svg-wrapper {
+            transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: bottom center;
+        }
+        .flask-liquid-path {
+            transition: fill 0.35s ease, fill-opacity 0.35s ease;
+        }
+        /* Estilo de unidad tachada en el constructor de factores */
+        .unit-cancelled {
+            position: relative;
+            display: inline-block;
+            opacity: 0.55;
+        }
+        .unit-cancelled::after {
+            content: "";
+            position: absolute;
+            left: -3px;
+            right: -3px;
+            top: 50%;
+            height: 2.2px;
+            background-color: #e11d48;
+            transform: rotate(-14deg);
+            border-radius: 2px;
+        }
+        .factor-card {
+            transition: all 0.2s ease;
+        }
+        .factor-card:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px -3px rgba(79, 70, 229, 0.18);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 sm:p-6 md:p-8">
+
+    <div class="max-w-5xl w-full mx-auto space-y-4">
+
+        <!-- 1. TOP HEADER BAR (Idéntica a la captura 1) -->
+        <header class="bg-white rounded-2xl pill-shadow border border-slate-100 px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+            <!-- Left: Icon & Title -->
+            <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-[#4f46e5] flex items-center justify-center text-white shadow-md shadow-indigo-200 shrink-0">
+                    <!-- Icono Matraz / Átomo -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 id="app-title" class="text-xl sm:text-2xl font-extrabold text-[#1e1b4b] tracking-tight leading-tight">Disolver</h1>
+                    <p id="app-subtitle" class="text-xs sm:text-sm text-slate-500 font-medium">Elena Ruiz Alfaro</p>
+                </div>
+            </div>
+
+            <!-- Right: Language Switch & Score Pills -->
+            <div class="flex flex-wrap items-center gap-2.5">
+                <!-- Selector Idioma -->
+                <div class="bg-slate-100 p-1 rounded-full flex items-center border border-slate-200/80 text-xs font-bold">
+                    <button id="btn-lang-ca" onclick="setLanguage('ca')" class="px-3.5 py-1.5 rounded-full transition-all text-slate-500 hover:text-slate-800">
+                        Català
+                    </button>
+                    <button id="btn-lang-es" onclick="setLanguage('es')" class="px-3.5 py-1.5 rounded-full transition-all bg-white text-[#4f46e5] shadow-sm">
+                        Castellano
+                    </button>
+                </div>
+
+                <!-- Pill ACIERTOS -->
+                <div class="bg-[#eff6ff] border border-blue-200/70 text-[#1d4ed8] px-3.5 py-1.5 rounded-full text-xs font-extrabold tracking-wide uppercase">
+                    <span id="lbl-hits">ACIERTOS:</span> <span id="stat-hits" class="font-mono-num ml-0.5">0</span>
+                </div>
+
+                <!-- Pill RÉCORD -->
+                <div class="bg-[#fefce8] border border-amber-200/70 text-[#b45309] px-3.5 py-1.5 rounded-full text-xs font-extrabold tracking-wide uppercase">
+                    <span id="lbl-record">RÉCORD:</span> <span id="stat-record" class="font-mono-num ml-0.5">0</span>
+                </div>
+
+                <!-- Pill RACHA -->
+                <div class="bg-[#4f46e5] text-white px-4 py-1.5 rounded-full text-xs font-extrabold tracking-wide uppercase shadow-sm shadow-indigo-300 flex items-center gap-1">
+                    <span>🔥</span> <span id="lbl-streak">RACHA:</span> <span id="stat-streak" class="font-mono-num">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 2. CENTER TIMER PILL (Idéntica a la captura 1) -->
+        <div class="flex justify-center my-1">
+            <div class="bg-white rounded-full pill-shadow border border-slate-100 px-5 py-2 flex items-center gap-3">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="lbl-time" class="text-xs font-bold text-slate-500 tracking-wider uppercase">TIEMPO:</span>
+                <span id="timer-display" class="font-mono-num text-base font-extrabold text-[#1e1b4b]">00:00</span>
+                <button onclick="toggleTimer()" id="btn-timer-toggle" title="Pausar / Reanudar" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition text-xs font-bold">
+                    ⏸
+                </button>
+                <button onclick="resetTimer()" title="Reiniciar tiempo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition text-xs font-bold">
+                    ↺
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. STUDENT & SESSION BAR (Idéntica a la captura 1) -->
+        <div class="bg-white rounded-2xl pill-shadow border border-slate-100 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <!-- Input Alumno/a -->
+            <div class="flex items-center gap-2.5 flex-grow sm:flex-grow-0">
+                <span class="text-slate-500 text-sm">👤</span>
+                <label id="lbl-student" for="student-name" class="text-xs font-bold text-slate-700 whitespace-nowrap">Alumno/a:</label>
+                <input id="student-name" type="text" placeholder="Ej. Ana García" class="border border-slate-200 rounded-xl px-3.5 py-1.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-64 bg-slate-50/50">
+            </div>
+
+            <!-- Contadores por categoría y botón PDF -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600">
+                    <span id="lbl-cat1-pill">Molaridad:</span> <span id="stat-cat-conc" class="font-bold text-[#4f46e5]">0</span>
+                </div>
+                <div class="bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600">
+                    <span id="lbl-cat-mass-pill">% y g/L:</span> <span id="stat-cat-mass" class="font-bold text-[#4f46e5]">0</span>
+                </div>
+                <div class="bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600">
+                    <span id="lbl-cat-chi-pill">Fracc. Molar:</span> <span id="stat-cat-chi" class="font-bold text-[#4f46e5]">0</span>
+                </div>
+                <div class="bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600">
+                    <span id="lbl-cat2-pill">Riqueza y ρ:</span> <span id="stat-cat-com" class="font-bold text-[#4f46e5]">0</span>
+                </div>
+                <div class="bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600">
+                    <span id="lbl-cat3-pill">Diluciones:</span> <span id="stat-cat-dil" class="font-bold text-[#4f46e5]">0</span>
+                </div>
+
+                <button onclick="generateSessionPDF()" class="bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5 ml-1">
+                    <span>📄</span> <span id="lbl-pdf-btn">Generar PDF de Sesión</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. NAVIGATION TABS -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="switchMainTab('practice')" id="tab-practice" class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-[#4f46e5] text-white shadow-sm flex items-center gap-2">
+                    <span>🧮</span> <span id="lbl-tab-practice">Entrenador de Problemas</span>
+                </button>
+                <button onclick="switchMainTab('lab')" id="tab-lab" class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80 flex items-center gap-2">
+                    <span>🧪</span> <span id="lbl-tab-lab">Simulador de Matraz Aforado</span>
+                </button>
+                <button onclick="switchMainTab('theory')" id="tab-theory" class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80 flex items-center gap-2">
+                    <span>📖</span> <span id="lbl-tab-theory">Apuntes y Formulario (BAT_FQ 2.1)</span>
+                </button>
+            </div>
+
+            <!-- Filtro de categoría (visible en Entrenador) -->
+            <div id="category-filter-box" class="flex flex-wrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 text-xs font-semibold">
+                <button onclick="setProblemCategory('all')" id="cat-btn-all" class="px-3 py-1.5 rounded-lg bg-indigo-50 text-[#4f46e5] font-bold transition">Todos</button>
+                <button onclick="setProblemCategory('conc')" id="cat-btn-conc" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Molaridad</button>
+                <button onclick="setProblemCategory('mass')" id="cat-btn-mass" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">% y g/L</button>
+                <button onclick="setProblemCategory('chi')" id="cat-btn-chi" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Fracción Molar</button>
+                <button onclick="setProblemCategory('com')" id="cat-btn-com" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Riqueza y ρ</button>
+                <button onclick="setProblemCategory('dil')" id="cat-btn-dil" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">Diluciones</button>
+            </div>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- SECTION A: ENTRENADOR DE PROBLEMAS (2 MODALIDADES)    -->
+        <!-- ===================================================== -->
+        <section id="sec-practice" class="bg-white rounded-3xl pill-shadow border border-slate-100 p-6 sm:p-8 animate-pop">
+            <!-- Selector de Modalidad: Ejercicio Completo vs Problema Guiado -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <span id="lbl-mode-select" class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Modalidad:</span>
+                    <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200/80 text-xs font-bold">
+                        <button id="btn-mode-direct" onclick="setPracticeMode('direct')" class="px-3.5 py-1.5 rounded-lg transition-all bg-white text-[#4f46e5] shadow-sm flex items-center gap-1.5">
+                            <span>⚡</span> <span id="lbl-mode-direct">Ejercicio Completo (Directo)</span>
+                        </button>
+                        <button id="btn-mode-guided" onclick="setPracticeMode('guided')" class="px-3.5 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+                            <span>🧩</span> <span id="lbl-mode-guided">Problema Guiado (Factores paso a paso)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span id="q-number-badge" class="bg-indigo-100 text-[#4f46e5] font-mono-num text-xs font-extrabold px-3 py-1 rounded-full">#1</span>
+                    <span id="q-category-badge" class="bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1 rounded-full">Concentración Molar</span>
+                    <span id="q-solute-badge" class="bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-xs font-bold px-3 py-1 rounded-full">NaCl</span>
+                    <button onclick="nextProblem()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3.5 py-1.5 rounded-xl transition flex items-center gap-1 ml-1">
+                        <span>🔄</span> <span id="lbl-new-problem">Cambiar problema</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Enunciado del problema -->
+            <div class="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-5 sm:p-6 mb-6">
+                <p id="q-statement" class="text-slate-800 text-base sm:text-lg leading-relaxed font-medium"></p>
+                <div id="q-atomic-masses" class="mt-4 pt-3 border-t border-slate-200/70 text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-2">
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- ZONA EXCLUSIVA MODALIDAD GUIADA (PASO A PASO)     -->
+            <!-- ================================================= -->
+            <div id="guided-workspace" class="hidden space-y-5 mb-6">
+                <!-- FASE 1: Pregunta de estrategia inicial -->
+                <div id="guided-step1-box" class="bg-indigo-50/50 border border-indigo-200/80 rounded-2xl p-5 animate-pop">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-[#4f46e5] text-white text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase">Paso 1 de 3</span>
+                        <h4 id="lbl-guided-s1-title" class="text-sm font-extrabold text-[#1e1b4b]">Estrategia inicial: ¿Cómo empezamos a plantear el problema?</h4>
+                    </div>
+                    <p id="guided-s1-question" class="text-xs sm:text-sm text-slate-600 mb-3"></p>
+                    <div id="guided-s1-options" class="grid grid-cols-1 gap-2.5"></div>
+                    <div id="guided-s1-feedback" class="hidden mt-3 text-xs font-bold px-3.5 py-2 rounded-xl"></div>
+                </div>
+
+                <!-- FASE 2: Constructor interactivo de Factores de Conversión con tachado visual -->
+                <div id="guided-step2-box" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-5 animate-pop">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-[#4f46e5] text-white text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase">Paso 2 de 3</span>
+                            <h4 id="lbl-guided-s2-title" class="text-sm font-extrabold text-[#1e1b4b]">Construye la cadena de factores y tacha unidades</h4>
+                        </div>
+                        <button onclick="resetFactorChain()" class="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-3 py-1 rounded-lg transition">
+                            ↺ Reiniciar factores
+                        </button>
+                    </div>
+                    <p id="lbl-guided-s2-desc" class="text-xs text-slate-500 mb-3">
+                        Haz clic en las tarjetas de abajo en el orden adecuado para cancelar las unidades del numerador con las del denominador hasta obtener las unidades finales buscadas:
+                    </p>
+
+                    <!-- Pizarra de ecuación de factores con cancelación visual -->
+                    <div class="bg-white border-2 border-indigo-100 rounded-2xl p-4 min-h-[92px] flex flex-wrap items-center gap-2 overflow-x-auto shadow-inner" id="factor-chain-board">
+                        <!-- Renderizado dinámico del dato inicial y factores añadidos -->
+                    </div>
+
+                    <!-- Mensaje de estado de unidades -->
+                    <div id="factor-chain-status" class="mt-2.5 text-xs font-bold text-slate-600 flex items-center justify-between"></div>
+
+                    <!-- Banco de tarjetas de factores (correctos + distractores invertidos) -->
+                    <div class="mt-4 pt-3 border-t border-slate-200/80">
+                        <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2" id="lbl-factor-bank">Tarjetas de factores disponibles (elige cuál encaja para tachar la unidad anterior):</div>
+                        <div id="factor-cards-pool" class="flex flex-wrap gap-2.5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- ZONA DE RESPUESTA NUMÉRICA (COMÚN / PASO 3)       -->
+            <!-- ================================================= -->
+            <div id="numeric-answer-section" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div class="md:col-span-6">
+                    <label id="lbl-your-answer" for="user-answer" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        TU RESULTADO NUMÉRICO:
+                    </label>
+                    <div class="relative flex items-center">
+                        <input id="user-answer" type="number" step="any" placeholder="Ej: 1.25" 
+                               onkeydown="if(event.key==='Enter') handleEnterKey()"
+                               class="w-full border-2 border-slate-200 focus:border-[#4f46e5] rounded-2xl px-4 py-3 text-lg font-mono-num font-bold text-slate-900 focus:outline-none transition bg-white pr-28">
+                        <span id="q-unit-label" class="absolute right-4 text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                            mol/L (M)
+                        </span>
+                    </div>
+                    <p id="lbl-tolerance-note" class="text-[11px] text-slate-400 mt-1.5">
+                        * Puedes usar punto o coma decimal. Se admite un margen de redondeo del ±3%.
+                    </p>
+                </div>
+
+                <div class="md:col-span-6 flex flex-wrap gap-2.5">
+                    <button id="btn-check" onclick="checkAnswer()" class="flex-1 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-bold py-3.5 px-6 rounded-2xl shadow-md shadow-indigo-200 transition text-sm flex items-center justify-center gap-2">
+                        <span>✓</span> <span id="lbl-btn-check">Comprobar respuesta</span>
+                    </button>
+                    <button id="btn-hint" onclick="toggleHint()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold py-3.5 px-4 rounded-2xl transition text-sm flex items-center justify-center gap-1.5">
+                        <span>💡</span> <span id="lbl-btn-hint">Pista</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pista Desplegable (Solo en modo Ejercicio Completo) -->
+            <div id="hint-box" class="hidden mt-4 bg-amber-50/90 border border-amber-200 rounded-2xl p-4 text-amber-900 text-sm">
+                <div class="font-bold mb-1 flex items-center gap-1.5">
+                    <span>🧭</span> <span id="lbl-hint-title">Pista para plantear el ejercicio:</span>
+                </div>
+                <p id="hint-content" class="text-xs sm:text-sm leading-relaxed"></p>
+            </div>
+
+            <!-- Feedback y Resolución Paso a Paso con Factores de Conversión -->
+            <div id="feedback-box" class="hidden mt-6 rounded-2xl border p-5 sm:p-6 animate-pop">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span id="fb-icon" class="text-2xl"></span>
+                        <div>
+                            <h3 id="fb-title" class="font-extrabold text-base sm:text-lg"></h3>
+                            <p id="fb-subtitle" class="text-xs font-medium opacity-85"></p>
+                        </div>
+                    </div>
+                    <button onclick="nextProblem()" class="bg-[#1e1b4b] hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                        <span id="lbl-next-btn">Siguiente ejercicio</span> <span>➔</span>
+                    </button>
+                </div>
+
+                <!-- Resolución con Factores de Conversión -->
+                <div class="bg-white rounded-xl border border-slate-200/90 p-4 sm:p-5 mt-3 space-y-3">
+                    <div class="text-xs font-extrabold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                        <span>📐</span> <span id="lbl-solution-header">Resolución oficial mediante factores de conversión (BAT_FQ 2.1):</span>
+                    </div>
+                    <div id="fb-steps" class="space-y-3 text-slate-800 text-sm leading-relaxed overflow-x-auto"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- SECTION B: SIMULADOR INTERACTIVO DE MATRAZ AFORADO    -->
+        <!-- ===================================================== -->
+        <section id="sec-lab" class="hidden bg-white rounded-3xl pill-shadow border border-slate-100 p-6 sm:p-8 animate-pop">
+            <div class="mb-6">
+                <h2 id="lab-title" class="text-xl font-extrabold text-[#1e1b4b]">Laboratorio Virtual: Matraz Aforado y Concentración</h2>
+                <p id="lab-desc" class="text-sm text-slate-500 mt-1">
+                    En un matraz aforado real la disolución se enrasa siempre hasta la línea de aforo del cuello. Observa cómo al elegir un matraz de mayor volumen aumenta el tamaño del recipiente, mientras que al aumentar la concentración el color de la disolución se vuelve más oscuro.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <!-- Controles del Laboratorio -->
+                <div class="lg:col-span-7 space-y-5 bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200/80">
+                    <div>
+                        <label id="lbl-lab-solute" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">1. Selecciona el soluto:</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="lab-solute-buttons">
+                            <!-- Botones generados dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Masa de soluto -->
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1.5">
+                            <span id="lbl-lab-mass" class="text-slate-600 uppercase">2. Masa de soluto añadida ($m_s$):</span>
+                            <span class="font-mono-num text-[#4f46e5] text-sm"><span id="lab-mass-val">25</span> g</span>
+                        </div>
+                        <input id="lab-mass-slider" type="range" min="2" max="120" step="1" value="25" oninput="updateVirtualLab()" class="w-full accent-[#4f46e5] cursor-pointer">
+                    </div>
+
+                    <!-- Volumen del matraz aforado (cambia el tamaño del matraz) -->
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-2">
+                            <span id="lbl-lab-vol" class="text-slate-600 uppercase">3. Capacidad del matraz aforado ($V_d$, enrasado hasta el aforo):</span>
+                            <span class="font-mono-num text-[#4f46e5] text-sm"><span id="lab-vol-val">250</span> mL (<span id="lab-vol-l-val">0.25</span> L)</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 mb-2">
+                            <button onclick="setLabVolume(100)" id="btn-vol-100" class="py-2 rounded-xl border text-xs font-bold transition bg-white text-slate-700 border-slate-200 hover:bg-slate-100">100 mL</button>
+                            <button onclick="setLabVolume(250)" id="btn-vol-250" class="py-2 rounded-xl border text-xs font-bold transition bg-[#4f46e5] text-white border-[#4f46e5] shadow-sm">250 mL</button>
+                            <button onclick="setLabVolume(500)" id="btn-vol-500" class="py-2 rounded-xl border text-xs font-bold transition bg-white text-slate-700 border-slate-200 hover:bg-slate-100">500 mL</button>
+                            <button onclick="setLabVolume(1000)" id="btn-vol-1000" class="py-2 rounded-xl border text-xs font-bold transition bg-white text-slate-700 border-slate-200 hover:bg-slate-100">1000 mL</button>
+                        </div>
+                        <input id="lab-vol-slider" type="range" min="100" max="1000" step="50" value="250" oninput="updateVirtualLab()" class="w-full accent-[#4f46e5] cursor-pointer">
+                    </div>
+
+                    <!-- Cálculos en vivo con factores de conversión -->
+                    <div class="bg-white rounded-xl p-4 border border-slate-200 space-y-2">
+                        <div class="text-xs font-extrabold text-slate-400 uppercase tracking-wider" id="lbl-lab-live-calc">Cálculo en tiempo real (Factores de conversión):</div>
+                        <div id="lab-live-math" class="text-xs sm:text-sm text-slate-800 overflow-x-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Visualización Realista del Matraz Aforado SVG -->
+                <div class="lg:col-span-5 flex flex-col items-center">
+                    <div class="w-full h-80 bg-gradient-to-b from-slate-50/70 to-slate-100/90 rounded-2xl border border-slate-200/80 flex flex-col items-center justify-end p-4 relative overflow-hidden mb-5">
+                        <!-- Indicador superior de escala e intensidad óptica -->
+                        <div class="absolute top-3 left-3 right-3 flex justify-between items-center text-[11px] font-bold text-slate-500">
+                            <span id="lab-flask-size-badge" class="bg-white/90 px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">Matraz de 250 mL</span>
+                            <span id="lab-color-intensity-badge" class="bg-white/90 px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">Intensidad color: Media</span>
+                        </div>
+
+                        <!-- Contenedor escalable del Matraz Aforado Realista SVG -->
+                        <div id="lab-flask-scaler" class="flask-svg-wrapper flex flex-col items-center justify-end" style="transform: scale(0.78);">
+                            <svg width="220" height="260" viewBox="0 0 220 260" class="overflow-visible">
+                                <defs>
+                                    <!-- Recorte interior del matraz aforado (bulbo + cuello largo) -->
+                                    <clipPath id="volumetricFlaskClip">
+                                        <path d="M 96 18 L 124 18 L 124 115 C 124 128 182 162 186 205 C 190 236 165 248 110 248 C 55 248 30 236 34 205 C 38 162 96 128 96 115 Z" />
+                                    </clipPath>
+                                    <!-- Brillo de vidrio realista -->
+                                    <linearGradient id="glassShine" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+                                        <stop offset="30%" stop-color="#ffffff" stop-opacity="0.15"/>
+                                        <stop offset="85%" stop-color="#cbd5e1" stop-opacity="0.1"/>
+                                        <stop offset="100%" stop-color="#94a3b8" stop-opacity="0.35"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- Líquido enrasado SIEMPRE hasta la línea de aforo (y = 62) con menisco cóncavo -->
+                                <g clip-path="url(#volumetricFlaskClip)">
+                                    <path id="lab-svg-liquid" class="flask-liquid-path"
+                                          d="M 20 62 L 96 62 Q 110 67 124 62 L 200 62 L 200 255 L 20 255 Z"
+                                          fill="rgb(14, 165, 233)" fill-opacity="0.55" />
+                                </g>
+
+                                <!-- Sombra base del matraz -->
+                                <ellipse cx="110" cy="252" rx="68" ry="5" fill="rgba(15, 23, 42, 0.12)" />
+
+                                <!-- Contorno de vidrio del matraz aforado (cuello cilíndrico largo, bulbo piriforme y base plana) -->
+                                <path d="M 96 18 L 124 18 L 124 115 C 124 128 182 162 186 205 C 190 236 165 248 110 248 C 55 248 30 236 34 205 C 38 162 96 128 96 115 Z"
+                                      fill="url(#glassShine)" stroke="#475569" stroke-width="3.5" stroke-linejoin="round" />
+
+                                <!-- Boca esmerilada / reborde superior del cuello -->
+                                <rect x="91" y="13" width="38" height="6" rx="3" fill="#e2e8f0" stroke="#475569" stroke-width="2.5" />
+
+                                <!-- Reflejo curvo lateral del bulbo de vidrio -->
+                                <path d="M 52 195 C 55 168 88 142 98 125" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4" stroke-linecap="round" />
+
+                                <!-- LÍNEA DE AFORO (grabada en el cuello del matraz en y = 62) -->
+                                <line x1="88" y1="62" x2="132" y2="62" stroke="#e11d48" stroke-width="2.5" />
+                                <!-- Menisco del agua tangente a la línea de aforo -->
+                                <path d="M 96 60 Q 110 65 124 60" fill="none" stroke="#0f172a" stroke-opacity="0.45" stroke-width="1.8" />
+
+                                <!-- Etiqueta señalizadora del Aforo (Enrase) -->
+                                <g transform="translate(136, 53)">
+                                    <rect x="0" y="0" width="66" height="18" rx="5" fill="#fff1f2" stroke="#fecdd3" stroke-width="1.2" />
+                                    <text x="33" y="12.5" text-anchor="middle" fill="#be123c" font-size="9.5" font-weight="800" font-family="Inter, sans-serif">Línea aforo</text>
+                                </g>
+
+                                <!-- Grabado serigrafiado en el bulbo del matraz (Capacidad y 20 ºC) -->
+                                <text id="lab-svg-vol-text" x="110" y="188" text-anchor="middle" fill="#0f172a" font-size="16" font-weight="900" font-family="JetBrains Mono, monospace">250 mL</text>
+                                <text x="110" y="203" text-anchor="middle" fill="#334155" font-size="9.5" font-weight="700" font-family="Inter, sans-serif">In 20 °C · ±0.15 mL</text>
+
+                                <!-- Pastilla flotante con la Molaridad actual -->
+                                <g transform="translate(65, 214)">
+                                    <rect x="0" y="0" width="90" height="22" rx="11" fill="rgba(255,255,255,0.9)" stroke="#cbd5e1" stroke-width="1.2" />
+                                    <text id="lab-molarity-inside" x="45" y="15" text-anchor="middle" fill="#1e1b4b" font-size="12" font-weight="900" font-family="JetBrains Mono, monospace">1.71 M</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Indicadores numéricos inferiores -->
+                    <div class="grid grid-cols-3 gap-2.5 w-full">
+                        <div class="bg-indigo-50/80 border border-indigo-100 rounded-xl p-3 text-center">
+                            <div class="text-[11px] font-bold text-indigo-500 uppercase">Moles ($n_s$)</div>
+                            <div id="lab-out-moles" class="font-mono-num font-extrabold text-base text-[#1e1b4b] mt-0.5">0.43 mol</div>
+                        </div>
+                        <div class="bg-emerald-50/80 border border-emerald-100 rounded-xl p-3 text-center">
+                            <div class="text-[11px] font-bold text-emerald-600 uppercase">Molaridad</div>
+                            <div id="lab-out-molarity" class="font-mono-num font-extrabold text-base text-emerald-900 mt-0.5">1.71 M</div>
+                        </div>
+                        <div class="bg-amber-50/80 border border-amber-100 rounded-xl p-3 text-center">
+                            <div class="text-[11px] font-bold text-amber-700 uppercase">Conc. g/L</div>
+                            <div id="lab-out-gl" class="font-mono-num font-extrabold text-base text-amber-900 mt-0.5">100 g/L</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- SECTION C: APUNTES Y FORMULARIO (BAT_FQ 2.1)          -->
+        <!-- ===================================================== -->
+        <section id="sec-theory" class="hidden bg-white rounded-3xl pill-shadow border border-slate-100 p-6 sm:p-8 animate-pop space-y-6">
+            <div class="border-b border-slate-100 pb-4">
+                <h2 id="th-title" class="text-xl font-extrabold text-[#1e1b4b]">Definiciones e Instrucciones de Factores de Conversión — Apunts BAT_FQ 2.1</h2>
+                <p id="th-subtitle" class="text-sm text-slate-500 mt-1">
+                    Definiciones fundamentales de concentración y método general para construir factores de conversión razonando las unidades (sin memorizar recetas).
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Card 1: % en masa y g/L -->
+                <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/80">
+                    <h3 class="font-extrabold text-sm text-[#4f46e5] uppercase tracking-wider mb-2" id="th-c1-title">1. Porcentaje en masa y Concentración en masa</h3>
+                    <p class="text-xs text-slate-600 mb-3" id="th-c1-desc">Relacionan la masa de soluto puro ($m_s$) con la masa total de disolución ($m_d = m_s + m_{\text{disolvente}}$) o con su volumen en litros ($V_d$):</p>
+                    <div class="bg-white rounded-xl p-3 border border-slate-200 text-xs sm:text-sm">
+                        $$\% \text{ masa} = \frac{m_{\text{soluto}}}{m_{\text{disolución}}} \cdot 100 \qquad ; \qquad C_m = \frac{m_{\text{soluto}}\text{ (g)}}{V_{\text{disolución}}\text{ (L)}}$$
+                    </div>
+                </div>
+
+                <!-- Card 2: Molaridad y Fracción Molar -->
+                <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/80">
+                    <h3 class="font-extrabold text-sm text-[#4f46e5] uppercase tracking-wider mb-2" id="th-c2-title">2. Molaridad ($M$) y Fracción Molar ($\chi_s$)</h3>
+                    <p class="text-xs text-slate-600 mb-3" id="th-c2-desc">Expresan la concentración en función de la cantidad de sustancia en moles ($n = m / M_m$) y la conservación de moles al diluir ($n_{\text{inicial}} = n_{\text{final}}$):</p>
+                    <div class="bg-white rounded-xl p-3 border border-slate-200 text-xs sm:text-sm">
+                        $$M = \frac{n_{\text{soluto}}\text{ (mol)}}{V_{\text{disolución}}\text{ (L)}} \qquad ; \qquad \chi_s = \frac{n_s}{n_s + n_{\text{agua}}}$$
+                    </div>
+                </div>
+
+                <!-- Card 3: Instrucciones Generales de los Factores de Conversión (SIN FÓRMULAS PARA NO MEMORIZAR) -->
+                <div class="bg-indigo-50/60 rounded-2xl p-5 sm:p-6 border border-indigo-200/80 md:col-span-2 space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🧭</span>
+                        <h3 class="font-extrabold text-sm sm:text-base text-indigo-950 uppercase tracking-wider" id="th-c3-title">
+                            3. Instrucciones Generales para Resolver con Factores de Conversión
+                        </h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-indigo-950/85 leading-relaxed" id="th-c3-intro">
+                        Un <strong>factor de conversión</strong> es una fracción en la que el numerador y el denominador expresan la <strong>misma cantidad física o proporción</strong> pero en distintas unidades o especies, por lo que multiplicar por él equivale a multiplicar por $1$ sin alterar el valor real. <strong>No memorices cadenas fijas</strong>; construye tu propia secuencia siguiendo siempre estas 5 reglas:
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
+                        <div class="bg-white rounded-xl p-4 border border-indigo-100 shadow-sm">
+                            <div class="font-extrabold text-[#4f46e5] mb-1">Paso 1: Identifica el dato de partida y tu objetivo</div>
+                            <p class="text-slate-600 leading-relaxed">
+                                Escribe al principio la cantidad que quieres transformar (o la relación de partida) especificando <strong>siempre tanto la unidad como el apellido químico</strong>: distingue con rigor entre $\text{g de soluto puro}$, $\text{g de disolución}$ y $\text{mL de disolución}$.
+                            </p>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-4 border border-indigo-100 shadow-sm">
+                            <div class="font-extrabold text-[#4f46e5] mb-1">Paso 2: Coloca las unidades para que se cancelen (tachen)</div>
+                            <p class="text-slate-600 leading-relaxed">
+                                En cada nuevo factor, escribe la unidad que deseas eliminar en el <strong>lado opuesto</strong> (si está en el numerador, ponla en el denominador; si está abajo, ponla arriba) para poder tacharlas:
+                                $$\text{Unidad A} \cdot \frac{\text{Unidad B}}{\text{Unidad A}} = \text{Unidad B}$$
+                            </p>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-4 border border-indigo-100 shadow-sm">
+                            <div class="font-extrabold text-[#4f46e5] mb-1">Paso 3: Traduce los datos del enunciado en equivalencias</div>
+                            <ul class="text-slate-600 space-y-1 list-disc list-inside">
+                                <li><strong>Masa molar ($M_m$):</strong> relaciona $1\text{ mol de soluto}$ con sus $\text{g de soluto puro}$.</li>
+                                <li><strong>Riqueza (% en masa):</strong> indica cuántos $\text{g de soluto puro}$ hay en cada $100\text{ g de disolución comercial}$.</li>
+                                <li><strong>Densidad ($\rho$):</strong> relaciona la masa de la disolución ($\text{g disolución}$) con el volumen de esa misma disolución ($\text{mL}$ o $\text{L disolución}$). <em>¡Nunca la confundas con concentración!</em></li>
+                                <li><strong>Molaridad ($M$):</strong> relaciona los $\text{mol de soluto}$ con $1\text{ L de disolución}$.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-4 border border-indigo-100 shadow-sm">
+                            <div class="font-extrabold text-[#4f46e5] mb-1">Paso 4: Verifica antes de usar la calculadora</div>
+                            <p class="text-slate-600 leading-relaxed">
+                                Revisa que todas las unidades intermedias se hayan tachado por parejas (arriba y abajo) y que la única unidad superviviente sea exactamente la que te pide la pregunta. Por último, multiplica todos los numeradores y divide entre el producto de los denominadores.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- 5. FOOTER (Idéntico a la captura 2) -->
+    <footer class="mt-12 py-6 text-center">
+        <p class="text-xs sm:text-sm font-medium text-[#8b9bb4] tracking-wide">
+            © 2026 Elena Ruiz Alfaro · Dpto. Física y Química · IEDIB
+        </p>
+    </footer>
+
+    <!-- ===================================================== -->
+    <!-- JAVASCRIPT ENGINE                                     -->
+    <!-- ===================================================== -->
+    <script>
+        // Base de datos de solutos frecuentes en Apunts BAT_FQ 2.1 con RGB para ley de Beer-Lambert en el matraz
+        const SOLUTES = [
+            { formula: "HCl", latex: "\\text{HCl}", nameEs: "ácido clorhídrico", nameCa: "àcid clorhídric", mm: 36.5, atoms: "H = 1; Cl = 35,5", rgb: [245, 158, 11] },
+            { formula: "H₂SO₄", latex: "\\text{H}_2\\text{SO}_4", nameEs: "ácido sulfúrico", nameCa: "àcid sulfúric", mm: 98.0, atoms: "H = 1; S = 32; O = 16", rgb: [217, 119, 6] },
+            { formula: "HNO₃", latex: "\\text{HNO}_3", nameEs: "ácido nítrico", nameCa: "àcid nítric", mm: 63.0, atoms: "H = 1; N = 14; O = 16", rgb: [234, 179, 8] },
+            { formula: "NaOH", latex: "\\text{NaOH}", nameEs: "hidróxido de sodio", nameCa: "hidròxid de sodi", mm: 40.0, atoms: "Na = 23; O = 16; H = 1", rgb: [56, 189, 248] },
+            { formula: "KOH", latex: "\\text{KOH}", nameEs: "hidróxido de potasio", nameCa: "hidròxid de potassi", mm: 56.1, atoms: "K = 39,1; O = 16; H = 1", rgb: [99, 102, 241] },
+            { formula: "NaCl", latex: "\\text{NaCl}", nameEs: "cloruro de sodio", nameCa: "clorur de sodi", mm: 58.5, atoms: "Na = 23; Cl = 35,5", rgb: [37, 99, 235] },
+            { formula: "CuSO₄", latex: "\\text{CuSO}_4", nameEs: "sulfato de cobre(II)", nameCa: "sulfat de coure(II)", mm: 159.6, atoms: "Cu = 63,5; S = 32; O = 16", rgb: [2, 132, 199] },
+            { formula: "CaCl₂", latex: "\\text{CaCl}_2", nameEs: "cloruro de calcio", nameCa: "clorur de calci", mm: 111.0, atoms: "Ca = 40; Cl = 35,5", rgb: [16, 185, 129] },
+            { formula: "KMnO₄", latex: "\\text{KMnO}_4", nameEs: "permanganato de potasio", nameCa: "permanganat de potassi", mm: 158.0, atoms: "K = 39; Mn = 55; O = 16", rgb: [147, 51, 234] },
+            { formula: "CH₃COOH", latex: "\\text{CH}_3\\text{COOH}", nameEs: "ácido acético", nameCa: "àcid acètic", mm: 60.0, atoms: "C = 12; H = 1; O = 16", rgb: [236, 72, 153] },
+            { formula: "C₆H₁₂O₆", latex: "\\text{C}_6\\text{H}_{12}\\text{O}_6", nameEs: "glucosa", nameCa: "glucosa", mm: 180.0, atoms: "C = 12; H = 1; O = 16", rgb: [245, 158, 11] },
+            { formula: "C₁₂H₂₂O₁₁", latex: "\\text{C}_{12}\\text{H}_{22}\\text{O}_{11}", nameEs: "sacarosa", nameCa: "sacarosa", mm: 342.0, atoms: "C = 12; H = 1; O = 16", rgb: [168, 85, 247] },
+            { formula: "NaHCO₃", latex: "\\text{NaHCO}_3", nameEs: "hidrogenocarbonato de sodio", nameCa: "hidrogencarbonat de sodi", mm: 84.0, atoms: "Na = 23; H = 1; C = 12; O = 16", rgb: [14, 165, 233] },
+            { formula: "Na₂CO₃", latex: "\\text{Na}_2\\text{CO}_3", nameEs: "carbonato de sodio", nameCa: "carbonat de sodi", mm: 106.0, atoms: "Na = 23; C = 12; O = 16", rgb: [13, 148, 136] },
+            { formula: "KNO₃", latex: "\\text{KNO}_3", nameEs: "nitrato de potasio", nameCa: "nitrat de potassi", mm: 101.1, atoms: "K = 39,1; N = 14; O = 16", rgb: [79, 70, 229] },
+            { formula: "NH₄Cl", latex: "\\text{NH}_4\\text{Cl}", nameEs: "cloruro de amonio", nameCa: "clorur d'amoni", mm: 53.5, atoms: "N = 14; H = 1; Cl = 35,5", rgb: [20, 184, 166] },
+            { formula: "MgCl₂", latex: "\\text{MgCl}_2", nameEs: "cloruro de magnesio", nameCa: "clorur de magnesi", mm: 95.2, atoms: "Mg = 24,3; Cl = 35,5", rgb: [100, 116, 139] }
+        ];
+
+        const I18N = {
+            es: {
+                appTitle: "Disolver",
+                appSubtitle: "Dpto. Física y Química — Elena Ruiz Alfaro",
+                hits: "ACIERTOS:",
+                record: "RÉCORD:",
+                streak: "RACHA:",
+                time: "TIEMPO:",
+                student: "Alumno/a:",
+                studentPh: "Ej. Ana García",
+                cat1Pill: "Molaridad:",
+                catMassPill: "% y g/L:",
+                catChiPill: "Fracc. Molar:",
+                cat2Pill: "Riqueza y ρ:",
+                cat3Pill: "Diluciones:",
+                pdfBtn: "Generar PDF de Sesión",
+                tabPractice: "Entrenador de Problemas",
+                tabLab: "Simulador de Matraz Aforado",
+                tabTheory: "Apuntes y Formulario (BAT_FQ 2.1)",
+                modeSelect: "Modalidad:",
+                modeDirect: "Ejercicio Completo (Directo)",
+                modeGuided: "Problema Guiado (Factores paso a paso)",
+                catAll: "Todos",
+                catConc: "Molaridad",
+                catMass: "% y g/L",
+                catChi: "Fracción Molar",
+                catCom: "Riqueza y ρ",
+                catDil: "Diluciones",
+                newProblem: "Cambiar problema",
+                yourAnswer: "TU RESULTADO NUMÉRICO:",
+                toleranceNote: "* Puedes usar punto o coma decimal. Se admite un margen de redondeo del ±3%.",
+                btnCheck: "Comprobar respuesta",
+                btnHint: "Pista",
+                hintTitle: "Pista para plantear el ejercicio:",
+                solutionHeader: "Resolución oficial mediante factores de conversión (BAT_FQ 2.1):",
+                nextBtn: "Siguiente ejercicio",
+                atomicDataPrefix: "Masas atómicas relativas:",
+                correctTitle: "¡Respuesta correcta! Excelente manejo de los factores de conversión.",
+                wrongTitle: "Respuesta incorrecta. Revisa la cadena de factores de conversión.",
+                expectedLabel: "Valor esperado:",
+                yourValLabel: "Tu respuesta:",
+                labTitle: "Laboratorio Virtual: Matraz Aforado y Concentración",
+                labDesc: "En un matraz aforado real la disolución se enrasa siempre hasta la línea de aforo del cuello. Observa cómo al elegir un matraz de mayor volumen aumenta el tamaño del recipiente, mientras que al aumentar la concentración el color se vuelve más oscuro.",
+                labSolute: "1. Selecciona el soluto:",
+                labMass: "2. Masa de soluto añadida (mₛ):",
+                labVol: "3. Capacidad del matraz aforado (V_d, enrasado hasta el aforo):",
+                labLiveCalc: "Cálculo en tiempo real (Factores de conversión):",
+                guidedS1Title: "Estrategia inicial: ¿Qué paso debemos dar primero?",
+                guidedS2Title: "Construye la cadena de factores y observa cómo se tachan las unidades",
+                guidedS2Desc: "Haz clic en las tarjetas de abajo en el orden adecuado para cancelar las unidades del numerador con las del denominador hasta obtener las unidades finales buscadas:",
+                factorBank: "Tarjetas de factores disponibles (elige cuál encaja para tachar la unidad anterior):"
+            },
+            ca: {
+                appTitle: "Dissoldre",
+                appSubtitle: "Dpt. Física i Química — Elena Ruiz Alfaro",
+                hits: "ENCERTS:",
+                record: "RÈCORD:",
+                streak: "RATXA:",
+                time: "TEMPS:",
+                student: "Alumne/a:",
+                studentPh: "Ex. Anna Garcia",
+                cat1Pill: "Molaritat:",
+                catMassPill: "% i g/L:",
+                catChiPill: "Fracc. Molar:",
+                cat2Pill: "Riquesa i ρ:",
+                cat3Pill: "Dilucions:",
+                pdfBtn: "Generar PDF de Sessió",
+                tabPractice: "Entrenador de Problemes",
+                tabLab: "Simulador de Matràs Aforat",
+                tabTheory: "Apunts i Formulari (BAT_FQ 2.1)",
+                modeSelect: "Modalitat:",
+                modeDirect: "Exercici Complet (Directe)",
+                modeGuided: "Problema Guiat (Factors pas a pas)",
+                catAll: "Tots",
+                catConc: "Molaritat",
+                catMass: "% i g/L",
+                catChi: "Fracció Molar",
+                catCom: "Riquesa i ρ",
+                catDil: "Dilucions",
+                newProblem: "Canviar problema",
+                yourAnswer: "EL TEU RESULTAT NUMÈRIC:",
+                toleranceNote: "* Pots fer servir punt o coma decimal. S'admet un marge d'arrodoniment del ±3%.",
+                btnCheck: "Comprovar resposta",
+                btnHint: "Pista",
+                hintTitle: "Pista per plantejar l'exercici:",
+                solutionHeader: "Resolució oficial mitjançant factors de conversió (BAT_FQ 2.1):",
+                nextBtn: "Següent exercici",
+                atomicDataPrefix: "Masses atòmiques relatives:",
+                correctTitle: "Resposta correcta! Excel·lent domini dels factors de conversió.",
+                wrongTitle: "Resposta incorrecta. Revisa la cadena de factors de conversió.",
+                expectedLabel: "Valor esperat:",
+                yourValLabel: "La teva resposta:",
+                labTitle: "Laboratori Virtual: Matràs Aforat i Concentració",
+                labDesc: "En un matràs aforat real la dissolució s'enrasa sempre fins a la línia d'aforament del coll. Observa com en triar un matràs de més volum augmenta la mida del recipient, mentre que en augmentar la concentració el color es torna més fosc.",
+                labSolute: "1. Selecciona el solut:",
+                labMass: "2. Massa de solut afegida (mₛ):",
+                labVol: "3. Capacitat del matràs aforat (V_d, enrasat fins a l'aforament):",
+                labLiveCalc: "Càlcul en temps real (Factors de conversió):",
+                guidedS1Title: "Estratègia inicial: Quin pas hem de fer primer?",
+                guidedS2Title: "Construeix la cadena de factors i observa com es ratllen les unitats",
+                guidedS2Desc: "Fes clic a les targetes d'abaix en l'ordre adequat per cancel·lar les unitats del numerador amb les del denominador fins a obtenir les unitats finals cercades:",
+                factorBank: "Targetes de factors disponibles (tria quina encaixa per ratllar la unitat anterior):"
+            }
+        };
+
+        let state = {
+            lang: 'es',
+            practiceMode: 'direct', // 'direct' o 'guided'
+            hits: 0,
+            record: 0,
+            streak: 0,
+            catCounts: { conc: 0, mass: 0, chi: 0, com: 0, dil: 0 },
+            selectedCat: 'all',
+            questionCounter: 0,
+            currentProblem: null,
+            answered: false,
+            guidedStep1Done: false,
+            guidedChainIndex: 0,
+            guidedShuffledPool: [],
+            history: [],
+            seconds: 0,
+            timerRunning: true,
+            timerInterval: null,
+            labSoluteIndex: 6 // CuSO4 por defecto en laboratorio
+        };
+
+        function renderMath() {
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        { left: "$$", right: "$$", display: true },
+                        { left: "$", right: "$", display: false },
+                        { left: "\\[", right: "\\]", display: true },
+                        { left: "\\(", right: "\\)", display: false }
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function roundTo(num, dec = 2) {
+            return Number(Math.round(num + "e" + dec) + "e-" + dec);
+        }
+
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        // =====================================================
+        // GENERADOR DE PROBLEMAS CON DATOS PARA MODO GUIADO
+        // =====================================================
+        function createProblem(categoryFilter) {
+            const categories = categoryFilter === 'all' ? ['conc', 'mass', 'chi', 'com', 'dil'] : [categoryFilter];
+            const cat = categories[randInt(0, categories.length - 1)];
+            const solute = SOLUTES[randInt(0, SOLUTES.length - 1)];
+
+            if (cat === 'conc') {
+                const subType = randInt(1, 2);
+                // Subtipo 1: Calcular la Molaridad a partir de gramos y mL
+                if (subType === 1) {
+                    const massG = randInt(8, 85);
+                    const volMl = [100, 200, 250, 500, 750][randInt(0, 4)];
+                    const moles = massG / solute.mm;
+                    const ansM = moles / (volMl / 1000);
+
+                    return {
+                        cat: 'conc',
+                        catLabelEs: "Concentración Molar (M)",
+                        catLabelCa: "Concentració Molar (M)",
+                        solute: solute,
+                        unit: "mol/L (M)",
+                        answer: ansM,
+                        statementEs: `Disolvemos <strong>${massG} g</strong> de ${solute.nameEs} ($${solute.latex}$) en agua destilada hasta enrasar un matraz aforado de <strong>${volMl} mL</strong>. Calcula la <strong>concentración molar (molaridad, $M$)</strong> de la disolución obtenida.`,
+                        statementCa: `Dissolem <strong>${massG} g</strong> de ${solute.nameCa} ($${solute.latex}$) en aigua destil·lada fins a enrasar un matràs aforat de <strong>${volMl} mL</strong>. Calcula la <strong>concentració molar (molaritat, $M$)</strong> de la dissolució obtinguda.`,
+                        hintEs: `Convierte los gramos de ${solute.formula} a moles usando su masa molar (${solute.mm} g/mol) y los mililitros de disolución a litros (1 L = 1000 mL) mediante factores de conversión.`,
+                        hintCa: `Converteix els grams de ${solute.formula} a mols emprant la seva massa molar (${solute.mm} g/mol) i els mil·lilitres de dissolució a litres (1 L = 1000 mL) mitjançant factors de conversió.`,
+                        guided: {
+                            questionEs: `Queremos obtener la molaridad ($\\text{mol de }${solute.latex} / \\text{L de disolución}$). ¿Cuál es el punto de partida correcto para encadenar nuestros factores?`,
+                            questionCa: `Volem obtenir la molaritat ($\\text{mol de }${solute.latex} / \\text{L de dissolució}$). Quin és el punt de partida correcte per encadenar els nostres factors?`,
+                            optionsEs: [
+                                { text: `Partir del cociente entre la masa de soluto (${massG} g ${solute.formula}) en el numerador y el volumen de disolución (${volMl} mL dis.) en el denominador.`, correct: true },
+                                { text: `Multiplicar la masa de soluto (${massG} g) por el volumen (${volMl} mL) y dividir entre 100.`, correct: false },
+                                { text: `Sumar los gramos de soluto (${massG} g) más los mililitros de agua (${volMl} mL) para hallar la masa total.`, correct: false }
+                            ],
+                            optionsCa: [
+                                { text: `Partir del quocient entre la massa de solut (${massG} g ${solute.formula}) al numerador i el volum de dissolució (${volMl} mL dis.) al denominador.`, correct: true },
+                                { text: `Multiplicar la massa de solut (${massG} g) pel volum (${volMl} mL) i dividir entre 100.`, correct: false },
+                                { text: `Sumar els grams de solut (${massG} g) més els mil·lilitres d'aigua (${volMl} mL) per trobar la massa total.`, correct: false }
+                            ],
+                            initNumVal: `${massG}`,
+                            initNumUnit: `g ${solute.formula}`,
+                            initDenVal: `${volMl}`,
+                            initDenUnit: `mL dis.`,
+                            steps: [
+                                { numVal: `1`, numUnit: `mol ${solute.formula}`, denVal: `${solute.mm}`, denUnit: `g ${solute.formula}`, cancels: 'num' },
+                                { numVal: `1000`, numUnit: `mL dis.`, denVal: `1`, denUnit: `L dis.`, cancels: 'den' }
+                            ],
+                            distractors: [
+                                { numVal: `${solute.mm}`, numUnit: `g ${solute.formula}`, denVal: `1`, denUnit: `mol ${solute.formula}` },
+                                { numVal: `1`, numUnit: `L dis.`, denVal: `1000`, denUnit: `mL dis.` }
+                            ]
+                        },
+                        stepsEs: `
+                            <p><strong>Paso 1:</strong> Calculamos la masa molar de $${solute.latex}$: $M_m = ${solute.mm}\\text{ g/mol}$.</p>
+                            <p><strong>Paso 2:</strong> Aplicamos factores de conversión encadenados partiendo de la relación masa/volumen:</p>
+                            $$M = \\frac{${massG}\\text{ g }${solute.latex}}{${volMl}\\text{ mL disolución}} \\cdot \\frac{1\\text{ mol }${solute.latex}}{${solute.mm}\\text{ g }${solute.latex}} \\cdot \\frac{1000\\text{ mL disolución}}{1\\text{ L disolución}} = \\mathbf{${roundTo(ansM, 2)}\\text{ mol/L (M)}}$$
+                        `,
+                        stepsCa: `
+                            <p><strong>Pas 1:</strong> Calculem la massa molar de $${solute.latex}$: $M_m = ${solute.mm}\\text{ g/mol}$.</p>
+                            <p><strong>Pas 2:</strong> Apliquem factors de conversió encadenats partint de la relació massa/volum:</p>
+                            $$M = \\frac{${massG}\\text{ g }${solute.latex}}{${volMl}\\text{ mL dissolució}} \\cdot \\frac{1\\text{ mol }${solute.latex}}{${solute.mm}\\text{ g }${solute.latex}} \\cdot \\frac{1000\\text{ mL dissolució}}{1\\text{ L dissolució}} = \\mathbf{${roundTo(ansM, 2)}\\text{ mol/L (M)}}$$
+                        `
+                    };
+                }
+                // Subtipo 2: Calcular masa necesaria (g) para preparar V mL de disolución M molar
+                else {
+                    const targetM = [0.1, 0.25, 0.5, 0.75, 1.2, 1.5, 2.0][randInt(0, 6)];
+                    const volMl = [100, 250, 500, 1000][randInt(0, 3)];
+                    const ansG = (volMl / 1000) * targetM * solute.mm;
+
+                    return {
+                        cat: 'conc',
+                        catLabelEs: "Preparación de Disolución",
+                        catLabelCa: "Preparació de Dissolució",
+                        solute: solute,
+                        unit: "g soluto",
+                        answer: ansG,
+                        statementEs: `En el laboratorio queremos preparar <strong>${volMl} mL</strong> de una disolución acuosa de ${solute.nameEs} ($${solute.latex}$) de concentración <strong>${targetM} M</strong>. ¿Qué <strong>masa en gramos</strong> de soluto puro debemos pesar en la balanza?`,
+                        statementCa: `Al laboratori volem preparar <strong>${volMl} mL</strong> d'una dissolució aquosa de ${solute.nameCa} ($${solute.latex}$) de concentració <strong>${targetM} M</strong>. Quina <strong>massa en grams</strong> de solut pur hem de pesar a la balança?`,
+                        hintEs: `Parte del volumen de disolución a preparar (${volMl} mL), conviértelo a litros, multiplica por la molaridad (${targetM} mol/L) y transforma los moles a gramos con la masa molar (${solute.mm} g/mol).`,
+                        hintCa: `Parteix del volum de dissolució a preparar (${volMl} mL), converteix-lo a litres, multiplica per la molaritat (${targetM} mol/L) i transforma els mols a grams amb la massa molar (${solute.mm} g/mol).`,
+                        guided: {
+                            questionEs: `Para calcular los gramos de ${solute.formula} necesarios, ¿con qué dato concreto conviene iniciar la cadena de factores de conversión?`,
+                            questionCa: `Per calcular els grams de ${solute.formula} necessaris, amb quina dada concreta convé iniciar la cadena de factors de conversió?`,
+                            optionsEs: [
+                                { text: `Partir del volumen de disolución que queremos preparar (${volMl} mL dis.) y encadenar factores hasta llegar a gramos de soluto.`, correct: true },
+                                { text: `Dividir la masa molar (${solute.mm} g/mol) entre el volumen en mililitros (${volMl} mL).`, correct: false },
+                                { text: `Multiplicar la molaridad (${targetM} M) por 100 g de agua.`, correct: false }
+                            ],
+                            optionsCa: [
+                                { text: `Partir del volum de dissolució que volem preparar (${volMl} mL dis.) i encadenar factors fins a arribar a grams de solut.`, correct: true },
+                                { text: `Dividir la massa molar (${solute.mm} g/mol) entre el volum en mil·lilitres (${volMl} mL).`, correct: false },
+                                { text: `Multiplicar la molaritat (${targetM} M) per 100 g d'aigua.`, correct: false }
+                            ],
+                            initNumVal: `${volMl}`,
+                            initNumUnit: `mL dis.`,
+                            initDenVal: ``,
+                            initDenUnit: ``,
+                            steps: [
+                                { numVal: `1`, numUnit: `L dis.`, denVal: `1000`, denUnit: `mL dis.`, cancels: 'num' },
+                                { numVal: `${targetM}`, numUnit: `mol ${solute.formula}`, denVal: `1`, denUnit: `L dis.`, cancels: 'num' },
+                                { numVal: `${solute.mm}`, numUnit: `g ${solute.formula}`, denVal: `1`, denUnit: `mol ${solute.formula}`, cancels: 'num' }
+                            ],
+                            distractors: [
+                                { numVal: `1000`, numUnit: `mL dis.`, denVal: `1`, denUnit: `L dis.` },
+                                { numVal: `1`, numUnit: `mol ${solute.formula}`, denVal: `${solute.mm}`, denUnit: `g ${solute.formula}` }
+                            ]
+                        },
+                        stepsEs: `
+                            <p><strong>Planteamiento mediante factores de conversión:</strong> Partimos del volumen total de disolución que deseamos preparar (${volMl} mL):</p>
+                            $$m = ${volMl}\\text{ mL disolución} \\cdot \\frac{1\\text{ L disolución}}{1000\\text{ mL disolución}} \\cdot \\frac{${targetM}\\text{ mol }${solute.latex}}{1\\text{ L disolución}} \\cdot \\frac{${solute.mm}\\text{ g }${solute.latex}}{1\\text{ mol }${solute.latex}} = \\mathbf{${roundTo(ansG, 2)}\\text{ g de }${solute.latex}}$$
+                        `,
+                        stepsCa: `
+                            <p><strong>Plantejament mitjançant factors de conversió:</strong> Partim del volum total de dissolució que volem preparar (${volMl} mL):</p>
+                            $$m = ${volMl}\\text{ mL dissolució} \\cdot \\frac{1\\text{ L dissolució}}{1000\\text{ mL dissolució}} \\cdot \\frac{${targetM}\\text{ mol }${solute.latex}}{1\\text{ L dissolució}} \\cdot \\frac{${solute.mm}\\text{ g }${solute.latex}}{1\\text{ mol }${solute.latex}} = \\mathbf{${roundTo(ansG, 2)}\\text{ g de }${solute.latex}}$$
+                        `
+                    };
+                }
+            }
+
+            // =====================================================
+            // NUEVA CATEGORÍA: PORCENTAJE EN MASA (%) Y g/L
+            // =====================================================
+            else if (cat === 'mass') {
+                const subType = randInt(1, 2);
+                // Subtipo 1: Porcentaje en masa (% en masa)
+                if (subType === 1) {
+                    const massSolute = randInt(12, 45);
+                    const massWater = randInt(150, 400);
+                    const massTotal = massSolute + massWater;
+                    const ansPct = (massSolute / massTotal) * 100;
+
+                    return {
+                        cat: 'mass',
+                        catLabelEs: "Porcentaje en Masa (% en masa)",
+                        catLabelCa: "Percentatge en Massa (% en massa)",
+                        solute: solute,
+                        unit: "% en masa",
+                        answer: ansPct,
+                        statementEs: `Preparamos una disolución disolviendo <strong>${massSolute} g</strong> de ${solute.nameEs} ($${solute.latex}$) en <strong>${massWater} g</strong> de agua destilada. Calcula el <strong>porcentaje en masa (% en masa)</strong> de soluto en la disolución resultante.`,
+                        statementCa: `Preparem una dissolució dissolent <strong>${massSolute} g</strong> de ${solute.nameCa} ($${solute.latex}$) en <strong>${massWater} g</strong> d'aigua destil·lada. Calcula el <strong>percentatge en massa (% en massa)</strong> de solut a la dissolució resultant.`,
+                        hintEs: `Recuerda que la masa total de la disolución es la suma del soluto más el disolvente ($m_d = ${massSolute} + ${massWater} = ${massTotal}\\text{ g}$). Plantea el factor de conversión para referirlo a 100 g de disolución.`,
+                        hintCa: `Recorda que la massa total de la dissolució és la suma del solut més el dissolvent ($m_d = ${massSolute} + ${massWater} = ${massTotal}\\text{ g}$). Planteja el factor de conversió per referir-ho a 100 g de dissolució.`,
+                        guided: {
+                            questionEs: `Para calcular el % en masa debemos referir la masa de soluto puro a la masa total de disolución. ¿Cuál es el planteamiento inicial correcto?`,
+                            questionCa: `Per calcular el % en massa hem de referir la massa de solut pur a la massa total de dissolució. Quin és el plantejament inicial correcte?`,
+                            optionsEs: [
+                                { text: `Sumar primero la masa total ($m_d = ${massSolute}\\text{ g} + ${massWater}\\text{ g} = ${massTotal}\\text{ g}$) y colocar en el numerador los ${massSolute} g de ${solute.formula} y en el denominador los ${massTotal} g de disolución.`, correct: true },
+                                { text: `Dividir los ${massSolute} g de ${solute.formula} directamente entre los ${massWater} g de agua sin sumar.`, correct: false },
+                                { text: `Multiplicar ${massSolute} g por la masa molar (${solute.mm} g/mol) y dividir entre 100.`, correct: false }
+                            ],
+                            optionsCa: [
+                                { text: `Sumar primer la massa total ($m_d = ${massSolute}\\text{ g} + ${massWater}\\text{ g} = ${massTotal}\\text{ g}$) i col·locar al numerador els ${massSolute} g de ${solute.formula} i al denominador els ${massTotal} g de dissolució.`, correct: true },
+                                { text: `Dividir els ${massSolute} g de ${solute.formula} directament entre els ${massWater} g d'aigua sense sumar.`, correct: false },
+                                { text: `Multiplicar ${massSolute} g per la massa molar (${solute.mm} g/mol) i dividir entre 100.`, correct: false }
+                            ],
+                            initNumVal: `${massSolute}`,
+                            initNumUnit: `g ${solute.formula}`,
+                            initDenVal: `${massTotal}`,
+                            initDenUnit: `g disolución`,
+                            steps: [
+                                { numVal: `100`, numUnit: `g disolución`, denVal: `1`, denUnit: `100 g dis.`, cancels: 'den' }
+                            ],
+                            distractors: [
+                                { numVal: `1`, numUnit: `mol ${solute.formula}`, denVal: `${solute.mm}`, denUnit: `g ${solute.formula}` },
+                                { numVal: `1`, numUnit: `100 g dis.`, denVal: `100`, denUnit: `g disolución` }
+                            ]
+                        },
+                        stepsEs: `
+                            <p><strong>Paso 1:</strong> Hallamos la masa total de disolución:</p>
+                            $$m_{\\text{dis}} = m_{\\text{soluto}} + m_{\\text{agua}} = ${massSolute}\\text{ g} + ${massWater}\\text{ g} = ${massTotal}\\text{ g de disolución}$$
+                            <p><strong>Paso 2:</strong> Calculamos el tanto por ciento en masa mediante factor de conversión a 100 g de disolución:</p>
+                            $$\\% \\text{ masa} = \\frac{${massSolute}\\text{ g }${solute.latex}}{${massTotal}\\text{ g disolución}} \\cdot 100\\text{ g disolución} = \\mathbf{${roundTo(ansPct, 2)}\\%}$$
+                        `,
+                        stepsCa: `
+                            <p><strong>Pas 1:</strong> Trobem la massa total de dissolució:</p>
+                            $$m_{\\text{dis}} = m_{\\text{solut}} + m_{\\text{aigua}} = ${massSolute}\\text{ g} + ${massWater}\\text{ g} = ${massTotal}\\text{ g de dissolució}$$
+                            <p><strong>Pas 2:</strong> Calculem el tant per cent en massa mitjançant factor de conversió a 100 g de dissolució:</p>
+                            $$\\% \\text{ massa} = \\frac{${massSolute}\\text{ g }${solute.latex}}{${massTotal}\\text{ g dissolució}} \\cdot 100\\text{ g dissolució} = \\mathbf{${roundTo(ansPct, 2)}\\%}$$
+                        `
+                    };
+                }
+                // Subtipo 2: Concentración en masa (g/L) a partir de Molaridad
+                else {
+                    const concM = [0.15, 0.25, 0.4, 0.5, 0.75, 1.25, 1.5][randInt(0, 6)];
+                    const ansGL = concM * solute.mm;
+
+                    return {
+                        cat: 'mass',
+                        catLabelEs: "Concentración en masa (g/L)",
+                        catLabelCa: "Concentració en massa (g/L)",
+                        solute: solute,
+                        unit: "g/L",
+                        answer: ansGL,
+                        statementEs: `Una disolución acuosa de ${solute.nameEs} ($${solute.latex}$) tiene una concentración molar de <strong>${concM} M</strong>. Expresa esta concentración en <strong>gramos por litro (g/L)</strong>.`,
+                        statementCa: `Una dissolució aquosa de ${solute.nameCa} ($${solute.latex}$) té una concentració molar de <strong>${concM} M</strong>. Expressa aquesta concentració en <strong>grams per litre (g/L)</strong>.`,
+                        hintEs: `Parte de la definición de molaridad (${concM} mol de ${solute.formula} / 1 L de disolución) y utiliza la masa molar (${solute.mm} g/mol) para transformar los moles a gramos.`,
+                        hintCa: `Parteix de la definició de molaritat (${concM} mol de ${solute.formula} / 1 L de dissolució) i empra la massa molar (${solute.mm} g/mol) per transformar els mols a grams.`,
+                        guided: {
+                            questionEs: `Queremos convertir mol/L en g/L de ${solute.formula}. ¿Cuál es la equivalencia y el factor a utilizar?`,
+                            questionCa: `Volem convertir mol/L en g/L de ${solute.formula}. Quina és l'equivalència i el factor a utilitzar?`,
+                            optionsEs: [
+                                { text: `Partir de ${concM} mol/L y multiplicar por el factor de masa molar (${solute.mm} g / 1 mol) para cancelar los moles del numerador.`, correct: true },
+                                { text: `Dividir ${concM} entre la masa molar (${solute.mm}) y multiplicar por 1000.`, correct: false },
+                                { text: `Multiplicar por la densidad del agua pura (1 g/mL).`, correct: false }
+                            ],
+                            optionsCa: [
+                                { text: `Partir de ${concM} mol/L i multiplicar pel factor de massa molar (${solute.mm} g / 1 mol) per cancel·lar els mols del numerador.`, correct: true },
+                                { text: `Dividir ${concM} entre la massa molar (${solute.mm}) i multiplicar per 1000.`, correct: false },
+                                { text: `Multiplicar per la densitat de l'aigua pura (1 g/mL).`, correct: false }
+                            ],
+                            initNumVal: `${concM}`,
+                            initNumUnit: `mol ${solute.formula}`,
+                            initDenVal: `1`,
+                            initDenUnit: `L dis.`,
+                            steps: [
+                                { numVal: `${solute.mm}`, numUnit: `g ${solute.formula}`, denVal: `1`, denUnit: `mol ${solute.formula}`, cancels: 'num' }
+                            ],
+                            distractors: [
+                                { numVal: `1`, numUnit: `mol ${solute.formula}`, denVal: `${solute.mm}`, denUnit: `g ${solute.formula}` },
+                                { numVal: `1000`, numUnit: `mL dis.`, denVal: `1`, denUnit: `L dis.` }
+                            ]
+                        },
+                        stepsEs: `
+                            <p><strong>Conversión de molaridad a concentración en g/L:</strong></p>
+                            $$C_m = \\frac{${concM}\\text{ mol }${solute.latex}}{1\\text{ L disolución}} \\cdot \\frac{${solute.mm}\\text{ g }${solute.latex}}{1\\text{ mol }${solute.latex}} = \\mathbf{${roundTo(ansGL, 2)}\\text{ g/L}}$$
+                        `,
+                        stepsCa: `
+                            <p><strong>Conversió de molaritat a concentració en g/L:</strong></p>
+                            $$C_m = \\frac{${concM}\\text{ mol }${solute.latex}}{1\\text{ L dissolució}} \\cdot \\frac{${solute.mm}\\text{ g }${solute.latex}}{1\\text{ mol }${solute.latex}} = \\mathbf{${roundTo(ansGL, 2)}\\text{ g/L}}$$
+                        `
+                    };
+                }
+            }
+
+            // =====================================================
+            // NUEVA CATEGORÍA: FRACCIÓN MOLAR (χ)
+            // =====================================================
+            else if (cat === 'chi') {
+                const massSolute = randInt(15, 60);
+                const massWater = [180, 250, 360, 500][randInt(0, 3)]; // Agua: Mm = 18.0 g/mol
+                const mmWater = 18.0;
+                const nSolute = massSolute / solute.mm;
+                const nWater = massWater / mmWater;
+                const nTotal = nSolute + nWater;
+                const chiSolute = nSolute / nTotal;
+
+                return {
+                    cat: 'chi',
+                    catLabelEs: "Fracción Molar (χ)",
+                    catLabelCa: "Fracció Molar (χ)",
+                    solute: solute,
+                    unit: "adimensional",
+                    answer: chiSolute,
+                    statementEs: `Disolvemos <strong>${massSolute} g</strong> de ${solute.nameEs} ($${solute.latex}$) en <strong>${massWater} g</strong> de agua ($M_m(\\text{H}_2\\text{O}) = 18{,}0\\text{ g/mol}$). Calcula la <strong>fracción molar de soluto ($\\chi_s$)</strong> en la disolución.`,
+                    statementCa: `Dissolem <strong>${massSolute} g</strong> de ${solute.nameCa} ($${solute.latex}$) en <strong>${massWater} g</strong> d'aigua ($M_m(\\text{H}_2\\text{O}) = 18{,}0\\text{ g/mol}$). Calcula la <strong>fracció molar de solut ($\\chi_s$)</strong> a la dissolució.`,
+                    hintEs: `Convierte mediante factores los gramos de ${solute.formula} a moles ($n_s$), los gramos de agua a moles ($n_{\\text{agua}}$) y aplica la definición $\\chi_s = \\frac{n_s}{n_s + n_{\\text{agua}}}$. El resultado es un número adimensional entre 0 y 1.`,
+                    hintCa: `Converteix mitjançant factors els grams de ${solute.formula} a mols ($n_s$), els grams d'aigua a mols ($n_{\\text{aigua}}$) i aplica la definició $\\chi_s = \\frac{n_s}{n_s + n_{\\text{aigua}}}$. El resultat és un nombre adimensional entre 0 i 1.`,
+                    guided: {
+                        questionEs: `La fracción molar $\\chi_s$ es la proporción de moles de soluto frente a los moles totales. ¿Cuál es el primer paso indispensable?`,
+                        questionCa: `La fracció molar $\\chi_s$ és la proporció de mols de solut respecte als mols totals. Quin és el primer pas indispensable?`,
+                        optionsEs: [
+                            { text: `Convertir primero ambas masas a cantidad de sustancia en moles ($n_s$ y $n_{\\text{agua}}$) usando sus respectivas masas molares.`, correct: true },
+                            { text: `Dividir los gramos de soluto directamente entre los gramos de agua sin calcular moles.`, correct: false },
+                            { text: `Multiplicar la masa de soluto por el número de Avogadro ($6{,}022 \\cdot 10^{23}$).`, correct: false }
+                        ],
+                        optionsCa: [
+                            { text: `Convertir primer totes dues masses a quantitat de substància en mols ($n_s$ i $n_{\\text{aigua}}$) emprant les seves respectives masses molars.`, correct: true },
+                            { text: `Dividir els grams de solut directament entre els grams d'aigua sense calcular mols.`, correct: false },
+                            { text: `Multiplicar la massa de solut pel nombre d'Avogadro ($6{,}022 \\cdot 10^{23}$).`, correct: false }
+                        ],
+                        initNumVal: `${massSolute}`,
+                        initNumUnit: `g ${solute.formula}`,
+                        initDenVal: ``,
+                        initDenUnit: ``,
+                        steps: [
+                            { numVal: `1`, numUnit: `mol ${solute.formula}`, denVal: `${solute.mm}`, denUnit: `g ${solute.formula}`, cancels: 'num' }
+                        ],
+                        distractors: [
+                            { numVal: `${solute.mm}`, numUnit: `g ${solute.formula}`, denVal: `1`, denUnit: `mol ${solute.formula}` },
+                            { numVal: `18`, numUnit: `g H2O`, denVal: `1`, denUnit: `mol H2O` }
+                        ]
+                    },
+                    stepsEs: `
+                        <p><strong>Paso 1:</strong> Convertimos las masas de soluto y disolvente a moles con sus masas molares relativas:</p>
+                        $$n_s = ${massSolute}\\text{ g }${solute.latex} \\cdot \\frac{1\\text{ mol }${solute.latex}}{${solute.mm}\\text{ g }${solute.latex}} = ${roundTo(nSolute, 4)}\\text{ mol de }${solute.latex}$$
+                        $$n_{\\text{agua}} = ${massWater}\\text{ g H}_2\\text{O} \\cdot \\frac{1\\text{ mol H}_2\\text{O}}{18{,}0\\text{ g H}_2\\text{O}} = ${roundTo(nWater, 3)}\\text{ mol de H}_2\\text{O}$$
+                        <p><strong>Paso 2:</strong> Calculamos los moles totales y la fracción molar $\\chi_s$:</p>
+                        $$n_{\\text{total}} = n_s + n_{\\text{agua}} = ${roundTo(nSolute, 4)} + ${roundTo(nWater, 3)} = ${roundTo(nTotal, 4)}\\text{ mol}$$
+                        $$\\chi_s = \\frac{n_s}{n_{\\text{total}}} = \\frac{${roundTo(nSolute, 4)}\\text{ mol}}{${roundTo(nTotal, 4)}\\text{ mol}} = \\mathbf{${roundTo(chiSolute, 4)}}$$
+                    `,
+                    stepsCa: `
+                        <p><strong>Pas 1:</strong> Convertim les masses de solut i dissolvent a mols amb les seves masses molars relatives:</p>
+                        $$n_s = ${massSolute}\\text{ g }${solute.latex} \\cdot \\frac{1\\text{ mol }${solute.latex}}{${solute.mm}\\text{ g }${solute.latex}} = ${roundTo(nSolute, 4)}\\text{ mol de }${solute.latex}$$
+                        $$n_{\\text{aigua}} = ${massWater}\\text{ g H}_2\\text{O} \\cdot \\frac{1\\text{ mol H}_2\\text{O}}{18{,}0\\text{ g H}_2\\text{O}} = ${roundTo(nWater, 3)}\\text{ mol de H}_2\\text{O}$$
+                        <p><strong>Pas 2:</strong> Calculem els mols totals i la fracció molar $\\chi_s$:</p>
+                        $$n_{\\text{total}} = n_s + n_{\\text{aigua}} = ${roundTo(nSolute, 4)} + ${roundTo(nWater, 3)} = ${roundTo(nTotal, 4)}\\text{ mol}$$
+                        $$\\chi_s = \\frac{n_s}{n_{\\text{total}}} = \\frac{${roundTo(nSolute, 4)}\\text{ mol}}{${roundTo(nTotal, 4)}\\text{ mol}} = \\mathbf{${roundTo(chiSolute, 4)}}$$
+                    `
+                };
+            }
+
+            // CATEGORÍA 4: RIQUEZA (%) Y DENSIDAD (REACTIVOS COMERCIALES)
+            else if (cat === 'com') {
+                const subType = randInt(1, 2);
+                const commercialReagents = [
+                    { solute: SOLUTES[0], pct: 37, rho: 1.19 },   // HCl
+                    { solute: SOLUTES[1], pct: 96, rho: 1.84 },   // H2SO4
+                    { solute: SOLUTES[2], pct: 68, rho: 1.40 },   // HNO3
+                    { solute: SOLUTES[3], pct: 32, rho: 1.35 },   // NaOH
+                    { solute: SOLUTES[9], pct: 80, rho: 1.07 }    // CH3COOH
+                ];
+                const item = commercialReagents[randInt(0, commercialReagents.length - 1)];
+                const s = item.solute;
+                const pct = item.pct + randInt(-2, 2);
+                const rho = roundTo(item.rho + (randInt(-3, 3) * 0.01), 2);
+                const molarity = (rho * 1000 * (pct / 100)) / s.mm;
+
+                if (subType === 1) {
+                    return {
+                        cat: 'com',
+                        catLabelEs: "Reactivo Comercial (% y ρ)",
+                        catLabelCa: "Reactiu Comercial (% i ρ)",
+                        solute: s,
+                        unit: "mol/L (M)",
+                        answer: molarity,
+                        statementEs: `La etiqueta de una botella comercial de ${s.nameEs} ($${s.latex}$) indica una riqueza del <strong>${pct}% en masa</strong> y una densidad de <strong>$${rho}\\text{ g/mL}$</strong> (o $\\text{g/cm}^3$). Calcula la <strong>molaridad ($M$)</strong> de este reactivo comercial.`,
+                        statementCa: `L'etiqueta d'una botella comercial d'${s.nameCa} ($${s.latex}$) indica una riquesa del <strong>${pct}% en massa</strong> i una densitat de <strong>$${rho}\\text{ g/mL}$</strong> (o $\\text{g/cm}^3$). Calcula la <strong>molaritat ($M$)</strong> d'aquest reactiu comercial.`,
+                        hintEs: `Encadena factores desde la densidad ($${rho}\\text{ g disolución / 1 mL disolución}$), pasa de mL a L ($1000\\text{ mL / 1 L}$), aplica la riqueza ($${pct}\\text{ g soluto / 100 g disolución}$) y pasa a moles con la masa molar ($${s.mm}\\text{ g/mol}$).`,
+                        hintCa: `Encadena factors des de la densitat ($${rho}\\text{ g dissolució / 1 mL dissolució}$), passa de mL a L ($1000\\text{ mL / 1 L}$), aplica la riquesa ($${pct}\\text{ g solut / 100 g dissolució}$) i passa a mols amb la massa molar ($${s.mm}\\text{ g/mol}$).`,
+                        guided: {
+                            questionEs: `¡Atención! La densidad ($${rho}\\text{ g/mL}$) se refiere a la disolución comercial completa, no al soluto puro. ¿Cómo iniciamos la cadena de factores?`,
+                            questionCa: `Atenció! La densitat ($${rho}\\text{ g/mL}$) es refereix a la dissolució comercial completa, no pas al solut pur. Com iniciem la cadena de factors?`,
+                            optionsEs: [
+                                { text: `Escribiendo la densidad como ${rho} g dis. / 1 mL dis., para luego transformar mL a L y usar la riqueza (${pct}%) para pasar a g de ${s.formula} puro.`, correct: true },
+                                { text: `Dividiendo directamente ${rho} g de ${s.formula} entre la masa molar (${s.mm} g/mol) sin usar la riqueza.`, correct: false },
+                                { text: `Sumando ${pct} g + ${rho} g y dividiendo entre 1000 mL.`, correct: false }
+                            ],
+                            optionsCa: [
+                                { text: `Escrivint la densitat com a ${rho} g dis. / 1 mL dis., per després transformar mL a L i emprar la riquesa (${pct}%) per passar a g de ${s.formula} pur.`, correct: true },
+                                { text: `Dividint directament ${rho} g de ${s.formula} entre la massa molar (${s.mm} g/mol) sense fer servir la riquesa.`, correct: false },
+                                { text: `Sumant ${pct} g + ${rho} g i dividint entre 1000 mL.`, correct: false }
+                            ],
+                            initNumVal: `${rho}`,
+                            initNumUnit: `g dis.`,
+                            initDenVal: `1`,
+                            initDenUnit: `mL dis.`,
+                            steps: [
+                                { numVal: `1000`, numUnit: `mL dis.`, denVal: `1`, denUnit: `L dis.`, cancels: 'den' },
+                                { numVal: `${pct}`, numUnit: `g ${s.formula}`, denVal: `100`, denUnit: `g dis.`, cancels: 'num' },
+                                { numVal: `1`, numUnit: `mol ${s.formula}`, denVal: `${s.mm}`, denUnit: `g ${s.formula}`, cancels: 'num' }
+                            ],
+                            distractors: [
+                                { numVal: `100`, numUnit: `g dis.`, denVal: `${pct}`, denUnit: `g ${s.formula}` },
+                                { numVal: `${s.mm}`, numUnit: `g ${s.formula}`, denVal: `1`, denUnit: `mol ${s.formula}` }
+                            ]
+                        },
+                        stepsEs: `
+                            <p><strong>Planteamiento mediante factores de conversión encadenados:</strong></p>
+                            $$M = \\frac{${rho}\\text{ g disolución}}{1\\text{ mL disolución}} \\cdot \\frac{1000\\text{ mL disolución}}{1\\text{ L disolución}} \\cdot \\frac{${pct}\\text{ g }${s.latex}\\text{ puro}}{100\\text{ g disolución}} \\cdot \\frac{1\\text{ mol }${s.latex}}{${s.mm}\\text{ g }${s.latex}\\text{ puro}} = \\mathbf{${roundTo(molarity, 2)}\\text{ mol/L (M)}}$$
+                        `,
+                        stepsCa: `
+                            <p><strong>Plantejament mitjançant factors de conversió encadenats:</strong></p>
+                            $$M = \\frac{${rho}\\text{ g dissolució}}{1\\text{ mL dissolució}} \\cdot \\frac{1000\\text{ mL dissolució}}{1\\text{ L dissolució}} \\cdot \\frac{${pct}\\text{ g }${s.latex}\\text{ pur}}{100\\text{ g dissolució}} \\cdot \\frac{1\\text{ mol }${s.latex}}{${s.mm}\\text{ g }${s.latex}\\text{ pur}} = \\mathbf{${roundTo(molarity, 2)}\\text{ mol/L (M)}}$$
+                        `
+                    };
+                } else {
+                    const volTargetMl = [250, 500, 1000][randInt(0, 2)];
+                    const mTarget = [0.2, 0.5, 1.0, 1.5][randInt(0, 3)];
+                    const molesNeeded = (volTargetMl / 1000) * mTarget;
+                    const pureGrams = molesNeeded * s.mm;
+                    const solGrams = pureGrams * (100 / pct);
+                    const ansVolMl = solGrams / rho;
+
+                    return {
+                        cat: 'com',
+                        catLabelEs: "Alícuota de Reactivo Comercial",
+                        catLabelCa: "Alíquota de Reactiu Comercial",
+                        solute: s,
+                        unit: "mL comerciales",
+                        answer: ansVolMl,
+                        statementEs: `Se desean preparar <strong>${volTargetMl} mL</strong> de disolución <strong>${mTarget} M</strong> de ${s.nameEs} ($${s.latex}$) a partir de un reactivo comercial del <strong>${pct}% en masa</strong> de riqueza y densidad <strong>$${rho}\\text{ g/mL}$</strong>. ¿Qué <strong>volumen (en mL)</strong> del reactivo comercial debemos tomar con la pipeta?`,
+                        statementCa: `Es volen preparar <strong>${volTargetMl} mL</strong> de dissolució <strong>${mTarget} M</strong> d'${s.nameCa} ($${s.latex}$) a partir d'un reactiu comercial del <strong>${pct}% en massa</strong> de riquesa i densitat <strong>$${rho}\\text{ g/mL}$</strong>. Quin <strong>volum (en mL)</strong> del reactiu comercial hem d'agafar amb la pipeta?`,
+                        hintEs: `Parte de los ${volTargetMl} mL de disolución final, halla los moles de soluto, pasa a gramos de soluto puro, usa la riqueza (${pct} g puros / 100 g dis. comercial) y finalmente la densidad (${rho} g dis. comercial / 1 mL).`,
+                        hintCa: `Parteix dels ${volTargetMl} mL de dissolució final, troba els mols de solut, passa a grams de solut pur, aplica la riquesa (${pct} g purs / 100 g dis. comercial) i finalment la densitat (${rho} g dis. comercial / 1 mL).`,
+                        guided: {
+                            questionEs: `Queremos averiguar cuántos mL de reactivo comercial concentrado necesitamos. ¿Por qué dato empezamos nuestra fila de factores?`,
+                            questionCa: `Volem esbrinar quants mL de reactiu comercial concentrat necessitem. Per quina dada comencem la nostra fila de factors?`,
+                            optionsEs: [
+                                { text: `Partir del volumen de disolución final que queremos preparar (${volTargetMl} mL dis. final) para deducir cuántos moles y gramos de ${s.formula} puro contiene.`, correct: true },
+                                { text: `Dividir el volumen final (${volTargetMl} mL) directamente entre la densidad (${rho} g/mL).`, correct: false },
+                                { text: `Restar al porcentaje comercial (${pct}%) la molaridad (${mTarget} M).`, correct: false }
+                            ],
+                            optionsCa: [
+                                { text: `Partir del volum de dissolució final que volem preparar (${volTargetMl} mL dis. final) per deduir quants mols i grams de ${s.formula} pur conté.`, correct: true },
+                                { text: `Dividir el volum final (${volTargetMl} mL) directament entre la densitat (${rho} g/mL).`, correct: false },
+                                { text: `Restar al percentatge comercial (${pct}%) la molaritat (${mTarget} M).`, correct: false }
+                            ],
+                            initNumVal: `${volTargetMl}`,
+                            initNumUnit: `mL dis. final`,
+                            initDenVal: ``,
+                            initDenUnit: ``,
+                            steps: [
+                                { numVal: `1`, numUnit: `L dis. final`, denVal: `1000`, denUnit: `mL dis. final`, cancels: 'num' },
+                                { numVal: `${mTarget}`, numUnit: `mol ${s.formula}`, denVal: `1`, denUnit: `L dis. final`, cancels: 'num' },
+                                { numVal: `${s.mm}`, numUnit: `g ${s.formula}`, denVal: `1`, denUnit: `mol ${s.formula}`, cancels: 'num' },
+                                { numVal: `100`, numUnit: `g dis. com.`, denVal: `${pct}`, denUnit: `g ${s.formula}`, cancels: 'num' },
+                                { numVal: `1`, numUnit: `mL dis. com.`, denVal: `${rho}`, denUnit: `g dis. com.`, cancels: 'num' }
+                            ],
+                            distractors: [
+                                { numVal: `${pct}`, numUnit: `g ${s.formula}`, denVal: `100`, denUnit: `g dis. com.` },
+                                { numVal: `${rho}`, numUnit: `g dis. com.`, denVal: `1`, denUnit: `mL dis. com.` }
+                            ]
+                        },
+                        stepsEs: `
+                            <p><strong>Resolución en una sola línea de factores de conversión:</strong></p>
+                            $$V = ${volTargetMl}\\text{ mL dis. final} \\cdot \\frac{1\\text{ L dis. final}}{1000\\text{ mL dis. final}} \\cdot \\frac{${mTarget}\\text{ mol }${s.latex}}{1\\text{ L dis. final}} \\cdot \\frac{${s.mm}\\text{ g }${s.latex}\\text{ puro}}{1\\text{ mol }${s.latex}} \\cdot \\frac{100\\text{ g dis. comercial}}{${pct}\\text{ g }${s.latex}\\text{ puro}} \\cdot \\frac{1\\text{ mL dis. comercial}}{${rho}\\text{ g dis. comercial}} = \\mathbf{${roundTo(ansVolMl, 2)}\\text{ mL}}$$
+                        `,
+                        stepsCa: `
+                            <p><strong>Resolució en una sola línia de factors de conversió:</strong></p>
+                            $$V = ${volTargetMl}\\text{ mL dis. final} \\cdot \\frac{1\\text{ L dis. final}}{1000\\text{ mL dis. final}} \\cdot \\frac{${mTarget}\\text{ mol }${s.latex}}{1\\text{ L dis. final}} \\cdot \\frac{${s.mm}\\text{ g }${s.latex}\\text{ pur}}{1\\text{ mol }${s.latex}} \\cdot \\frac{100\\text{ g dis. comercial}}{${pct}\\text{ g }${s.latex}\\text{ pur}} \\cdot \\frac{1\\text{ mL dis. comercial}}{${rho}\\text{ g dis. comercial}} = \\mathbf{${roundTo(ansVolMl, 2)}\\text{ mL}}$$
+                        `
+                    };
+                }
+            }
+
+            // =====================================================
+            // CATEGORÍA 5: DILUCIONES DE DISOLUCIONES
+            // =====================================================
+            else {
+                const m1 = [2.0, 2.5, 4.0, 5.0, 6.0][randInt(0, 4)];
+                const m2 = [0.1, 0.2, 0.25, 0.5][randInt(0, 3)];
+                const v2Ml = [100, 250, 500][randInt(0, 2)];
+                const ansV1Ml = (m2 * v2Ml) / m1;
+
+                return {
+                    cat: 'dil',
+                    catLabelEs: "Dilución de Disolución",
+                    catLabelCa: "Dilució de Dissolució",
+                    solute: solute,
+                    unit: "mL iniciales",
+                    answer: ansV1Ml,
+                    statementEs: `Disponemos de una disolución madre de ${solute.nameEs} ($${solute.latex}$) de concentración <strong>${m1} M</strong>. ¿Qué <strong>volumen (en mL)</strong> debemos pipetear de ella para preparar <strong>${v2Ml} mL</strong> de una disolución diluida <strong>${m2} M</strong>?`,
+                    statementCa: `Disposem d'una dissolució mare de ${solute.nameCa} ($${solute.latex}$) de concentració <strong>${m1} M</strong>. Quin <strong>volum (en mL)</strong> n'hem de pipetejar per preparar <strong>${v2Ml} mL</strong> d'una dissolució diluïda <strong>${m2} M</strong>?`,
+                    hintEs: `Calcula los moles presentes en los ${v2Ml} mL de la disolución diluida (${m2} M) y utiliza la concentración de la disolución madre (${m1} mol/L) como factor de conversión.`,
+                    hintCa: `Calcula els mols presents als ${v2Ml} mL de la dissolució diluïda (${m2} M) i utilitza la concentració de la dissolució mare (${m1} mol/L) com a factor de conversió.`,
+                    guided: {
+                        questionEs: `Al diluir con agua destilada, todos los moles de ${solute.formula} de la disolución diluida proceden de la alícuota pipeteada de la disolución madre. ¿Cómo empezamos?`,
+                        questionCa: `En diluir amb aigua destil·lada, tots els mols de ${solute.formula} de la dissolució diluïda procedeixen de l'alíquota pipetejada de la dissolució mare. Com comencem?`,
+                        optionsEs: [
+                            { text: `Partir del volumen de disolución diluida (${v2Ml} mL dis. diluida) para hallar los moles de soluto que necesitamos extraer de la disolución madre (${m1} M).`, correct: true },
+                            { text: `Multiplicar el volumen final (${v2Ml} mL) por la concentración madre (${m1} M) y dividir entre ${m2} M.`, correct: false },
+                            { text: `Restar ${m1} M menos ${m2} M y multiplicar por 1000 mL.`, correct: false }
+                        ],
+                        optionsCa: [
+                            { text: `Partir del volum de dissolució diluïda (${v2Ml} mL dis. diluïda) per trobar els mols de solut que necessitem extreure de la dissolució mare (${m1} M).`, correct: true },
+                            { text: `Multiplicar el volum final (${v2Ml} mL) per la concentració mare (${m1} M) i dividir entre ${m2} M.`, correct: false },
+                            { text: `Restar ${m1} M menys ${m2} M i multiplicar per 1000 mL.`, correct: false }
+                        ],
+                        initNumVal: `${v2Ml}`,
+                        initNumUnit: `mL dis. dil.`,
+                        initDenVal: ``,
+                        initDenUnit: ``,
+                        steps: [
+                            { numVal: `1`, numUnit: `L dis. dil.`, denVal: `1000`, denUnit: `mL dis. dil.`, cancels: 'num' },
+                            { numVal: `${m2}`, numUnit: `mol ${solute.formula}`, denVal: `1`, denUnit: `L dis. dil.`, cancels: 'num' },
+                            { numVal: `1`, numUnit: `L dis. madre`, denVal: `${m1}`, denUnit: `mol ${solute.formula}`, cancels: 'num' },
+                            { numVal: `1000`, numUnit: `mL dis. madre`, denVal: `1`, denUnit: `L dis. madre`, cancels: 'num' }
+                        ],
+                        distractors: [
+                            { numVal: `${m1}`, numUnit: `mol ${solute.formula}`, denVal: `1`, denUnit: `L dis. madre` },
+                            { numVal: `1`, numUnit: `L dis. dil.`, denVal: `${m2}`, denUnit: `mol ${solute.formula}` }
+                        ]
+                    },
+                    stepsEs: `
+                        <p><strong>Conservación de la cantidad de soluto mediante factores de conversión:</strong></p>
+                        $$V_1 = ${v2Ml}\\text{ mL dis. diluida} \\cdot \\frac{1\\text{ L dis. diluida}}{1000\\text{ mL dis. diluida}} \\cdot \\frac{${m2}\\text{ mol }${solute.latex}}{1\\text{ L dis. diluida}} \\cdot \\frac{1\\text{ L dis. madre}}{${m1}\\text{ mol }${solute.latex}} \\cdot \\frac{1000\\text{ mL dis. madre}}{1\\text{ L dis. madre}} = \\mathbf{${roundTo(ansV1Ml, 2)}\\text{ mL}}$$
+                    `,
+                    stepsCa: `
+                        <p><strong>Conservació de la quantitat de solut mitjançant factors de conversió:</strong></p>
+                        $$V_1 = ${v2Ml}\\text{ mL dis. diluïda} \\cdot \\frac{1\\text{ L dis. diluïda}}{1000\\text{ mL dis. diluïda}} \\cdot \\frac{${m2}\\text{ mol }${solute.latex}}{1\\text{ L dis. diluïda}} \\cdot \\frac{1\\text{ L dis. mare}}{${m1}\\text{ mol }${solute.latex}} \\cdot \\frac{1000\\text{ mL dis. mare}}{1\\text{ L dis. mare}} = \\mathbf{${roundTo(ansV1Ml, 2)}\\text{ mL}}$$
+                    `
+                };
+            }
+        }
+
+        // =====================================================
+        // CONTROL DE MODALIDADES (DIRECTO vs GUIADO)
+        // =====================================================
+        function setPracticeMode(mode) {
+            state.practiceMode = mode;
+            const btnDirect = document.getElementById('btn-mode-direct');
+            const btnGuided = document.getElementById('btn-mode-guided');
+
+            if (mode === 'direct') {
+                btnDirect.className = "px-3.5 py-1.5 rounded-lg transition-all bg-white text-[#4f46e5] shadow-sm flex items-center gap-1.5";
+                btnGuided.className = "px-3.5 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5";
+                document.getElementById('guided-workspace').classList.add('hidden');
+                document.getElementById('btn-hint').classList.remove('hidden');
+            } else {
+                btnGuided.className = "px-3.5 py-1.5 rounded-lg transition-all bg-white text-[#4f46e5] shadow-sm flex items-center gap-1.5";
+                btnDirect.className = "px-3.5 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5";
+                document.getElementById('guided-workspace').classList.remove('hidden');
+                document.getElementById('btn-hint').classList.add('hidden');
+                document.getElementById('hint-box').classList.add('hidden');
+            }
+            initGuidedForCurrentProblem();
+        }
+
+        function initGuidedForCurrentProblem() {
+            const p = state.currentProblem;
+            if (!p || !p.guided) return;
+
+            state.guidedStep1Done = false;
+            state.guidedChainIndex = 0;
+
+            // Preparar pool barajado de tarjetas de factores
+            const pool = [
+                ...p.guided.steps.map((s, idx) => ({ ...s, isCorrectStep: idx, used: false })),
+                ...p.guided.distractors.map(d => ({ ...d, isCorrectStep: -1, used: false }))
+            ];
+            state.guidedShuffledPool = shuffleArray(pool);
+
+            document.getElementById('guided-step2-box').classList.add('hidden');
+            const fb1 = document.getElementById('guided-s1-feedback');
+            fb1.classList.add('hidden');
+
+            renderGuidedStep1();
+            renderFactorBoard();
+        }
+
+        function renderGuidedStep1() {
+            const p = state.currentProblem;
+            if (!p || !p.guided) return;
+            const g = p.guided;
+
+            document.getElementById('guided-s1-question').innerHTML = state.lang === 'es' ? g.questionEs : g.questionCa;
+            const opts = state.lang === 'es' ? g.optionsEs : g.optionsCa;
+            const container = document.getElementById('guided-s1-options');
+            container.innerHTML = '';
+
+            opts.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.disabled = state.guidedStep1Done;
+                btn.className = "text-left px-4 py-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50/40 transition text-xs sm:text-sm font-medium text-slate-700 flex items-center gap-2.5";
+                btn.innerHTML = `<span class="w-6 h-6 rounded-full bg-indigo-100 text-[#4f46e5] font-extrabold text-xs flex items-center justify-center shrink-0">${String.fromCharCode(65 + i)}</span> <span>${opt.text}</span>`;
+                btn.onclick = () => selectGuidedStep1Option(opt.correct, btn);
+                container.appendChild(btn);
+            });
+            renderMath();
+        }
+
+        function selectGuidedStep1Option(isCorrect, btnEl) {
+            const fb1 = document.getElementById('guided-s1-feedback');
+            fb1.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-rose-100', 'text-rose-900');
+
+            if (isCorrect) {
+                state.guidedStep1Done = true;
+                btnEl.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-950');
+                fb1.classList.add('bg-emerald-100', 'text-emerald-900');
+                fb1.innerHTML = state.lang === 'es'
+                    ? '✓ ¡Planteamiento correcto! Ahora pasa al Paso 2 y selecciona cada factor de conversión para ir tachando unidades.'
+                    : '✓ Plantejament correcte! Ara passa al Pas 2 i selecciona cada factor de conversió per anar ratllant unitats.';
+                document.getElementById('guided-step2-box').classList.remove('hidden');
+                renderFactorBoard();
+            } else {
+                btnEl.classList.add('border-rose-400', 'bg-rose-50', 'opacity-60');
+                fb1.classList.add('bg-rose-100', 'text-rose-900');
+                fb1.innerHTML = state.lang === 'es'
+                    ? '✗ Esa opción no permite cancelar unidades correctamente. Piensa qué magnitud física conocemos como punto de partida.'
+                    : '✗ Aquesta opció no permet cancel·lar unitats correctament. Pensa quina magnitud física coneixem com a punt de partida.';
+            }
+        }
+
+        function resetFactorChain() {
+            state.guidedChainIndex = 0;
+            state.guidedShuffledPool.forEach(card => card.used = false);
+            renderFactorBoard();
+        }
+
+        function renderFactorBoard() {
+            const p = state.currentProblem;
+            if (!p || !p.guided) return;
+            const g = p.guided;
+            const board = document.getElementById('factor-chain-board');
+            board.innerHTML = '';
+
+            const currentIdx = state.guidedChainIndex;
+            const totalSteps = g.steps.length;
+
+            // Determinar si la unidad inicial ya ha sido cancelada por algún paso elegido
+            const firstStepCancelsInitNum = currentIdx >= 1 && g.steps[0].cancels === 'num';
+            const anyStepCancelsInitDen = g.steps.slice(0, currentIdx).some(s => s.cancels === 'den');
+
+            // 1. Bloque de dato inicial
+            const initBlock = document.createElement('div');
+            initBlock.className = "bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2 flex flex-col items-center justify-center text-xs font-bold";
+            if (g.initDenUnit) {
+                initBlock.innerHTML = `
+                    <div class="pb-1 border-b border-slate-400 w-full text-center">
+                        <span class="font-mono-num text-slate-900">${g.initNumVal}</span>
+                        <span class="ml-1 px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-900 ${firstStepCancelsInitNum ? 'unit-cancelled' : ''}">${g.initNumUnit}</span>
+                    </div>
+                    <div class="pt-1 w-full text-center">
+                        <span class="font-mono-num text-slate-900">${g.initDenVal}</span>
+                        <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 ${anyStepCancelsInitDen ? 'unit-cancelled' : ''}">${g.initDenUnit}</span>
+                    </div>
+                `;
+            } else {
+                initBlock.innerHTML = `
+                    <div class="py-1 text-center">
+                        <span class="font-mono-num text-slate-900 text-sm">${g.initNumVal}</span>
+                        <span class="ml-1 px-2 py-0.5 rounded bg-indigo-100 text-indigo-900 ${firstStepCancelsInitNum ? 'unit-cancelled' : ''}">${g.initNumUnit}</span>
+                    </div>
+                `;
+            }
+            board.appendChild(initBlock);
+
+            // 2. Factores encadenados hasta currentIdx
+            for (let i = 0; i < currentIdx; i++) {
+                const step = g.steps[i];
+                // ¿El numerador de este paso se cancela en un paso posterior?
+                const nextCancelsThisNum = g.steps.slice(i + 1, currentIdx).some(later => later.denUnit === step.numUnit);
+                // El denominador de este paso cancela una unidad anterior inmediatamente al colocarse
+                const thisDenCancelled = step.cancels === 'num';
+                const thisNumCancelledImmediately = step.cancels === 'den';
+
+                const dot = document.createElement('span');
+                dot.className = "font-black text-slate-400 text-lg px-0.5";
+                dot.textContent = "·";
+                board.appendChild(dot);
+
+                const factorEl = document.createElement('div');
+                factorEl.className = "bg-indigo-50/70 border border-indigo-300 rounded-xl px-3.5 py-2 flex flex-col items-center justify-center text-xs font-bold animate-pop";
+                factorEl.innerHTML = `
+                    <div class="pb-1 border-b border-indigo-300 w-full text-center">
+                        <span class="font-mono-num text-slate-900">${step.numVal}</span>
+                        <span class="ml-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 ${(nextCancelsThisNum || thisNumCancelledImmediately) ? 'unit-cancelled' : ''}">${step.numUnit}</span>
+                    </div>
+                    <div class="pt-1 w-full text-center">
+                        <span class="font-mono-num text-slate-900">${step.denVal}</span>
+                        <span class="ml-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 ${thisDenCancelled ? 'unit-cancelled' : ''}">${step.denUnit}</span>
+                    </div>
+                `;
+                board.appendChild(factorEl);
+            }
+
+            // 3. Hueco pendiente o símbolo "=" final
+            const statusEl = document.getElementById('factor-chain-status');
+            if (currentIdx < totalSteps) {
+                const dot = document.createElement('span');
+                dot.className = "font-black text-slate-400 text-lg px-0.5";
+                dot.textContent = "·";
+                board.appendChild(dot);
+
+                const slot = document.createElement('div');
+                slot.className = "border-2 border-dashed border-indigo-300 bg-indigo-50/30 rounded-xl px-4 py-3 text-xs font-bold text-indigo-500 flex items-center justify-center";
+                slot.textContent = state.lang === 'es' ? `Factor ${currentIdx + 1} de ${totalSteps}` : `Factor ${currentIdx + 1} de ${totalSteps}`;
+                board.appendChild(slot);
+
+                statusEl.innerHTML = state.lang === 'es'
+                    ? `<span>Progreso de factores: <strong>${currentIdx} / ${totalSteps}</strong></span>`
+                    : `<span>Progrés de factors: <strong>${currentIdx} / ${totalSteps}</strong></span>`;
+            } else {
+                const eq = document.createElement('span');
+                eq.className = "font-black text-emerald-600 text-sm px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-200 animate-pop";
+                eq.innerHTML = state.lang === 'es'
+                    ? `= ¡Unidades listas (${p.unit})! Introduce el resultado abajo 👇`
+                    : `= Unitats llestes (${p.unit})! Introdueix el resultat a baix 👇`;
+                board.appendChild(eq);
+
+                statusEl.innerHTML = state.lang === 'es'
+                    ? `<span class="text-emerald-700">✓ ¡Todas las unidades intermedias se han cancelado correctamente! Ahora multiplica numeradores y divide entre denominadores.</span>`
+                    : `<span class="text-emerald-700">✓ Totes les unitats intermèdies s'han cancel·lat correctament! Ara multiplica numeradors i divideix entre denominadors.</span>`;
+            }
+
+            // Renderizar banco de tarjetas
+            const poolContainer = document.getElementById('factor-cards-pool');
+            poolContainer.innerHTML = '';
+            state.guidedShuffledPool.forEach((card) => {
+                const btn = document.createElement('button');
+                btn.disabled = card.used || currentIdx >= totalSteps;
+                btn.className = `factor-card rounded-xl border px-3.5 py-2 text-xs font-bold flex flex-col items-center ${
+                    card.used
+                        ? 'opacity-35 bg-slate-100 border-slate-200 cursor-not-allowed'
+                        : 'bg-white border-slate-300 hover:border-[#4f46e5] text-slate-800 shadow-sm cursor-pointer'
+                }`;
+                btn.innerHTML = `
+                    <div class="pb-1 border-b border-slate-300 w-full text-center">
+                        <span class="font-mono-num text-[#4f46e5]">${card.numVal}</span> <span>${card.numUnit}</span>
+                    </div>
+                    <div class="pt-1 w-full text-center">
+                        <span class="font-mono-num text-[#4f46e5]">${card.denVal}</span> <span>${card.denUnit}</span>
+                    </div>
+                `;
+                btn.onclick = () => selectFactorCard(card, btn);
+                poolContainer.appendChild(btn);
+            });
+        }
+
+        function selectFactorCard(card, btnEl) {
+            const expectedIdx = state.guidedChainIndex;
+            if (card.isCorrectStep === expectedIdx) {
+                card.used = true;
+                state.guidedChainIndex++;
+                renderFactorBoard();
+                if (state.guidedChainIndex === state.currentProblem.guided.steps.length) {
+                    document.getElementById('user-answer').focus();
+                }
+            } else {
+                btnEl.classList.add('border-rose-500', 'bg-rose-50');
+                const statusEl = document.getElementById('factor-chain-status');
+                statusEl.innerHTML = state.lang === 'es'
+                    ? `<span class="text-rose-600">✗ Ese factor no cancela la unidad anterior (o tiene el numerador y denominador invertidos). Fíjate qué unidad necesitas tachar.</span>`
+                    : `<span class="text-rose-600">✗ Aquest factor no cancel·la la unitat anterior (o té el numerador i denominador invertits). Fixa't quina unitat necessites ratllar.</span>`;
+                setTimeout(() => {
+                    btnEl.classList.remove('border-rose-500', 'bg-rose-50');
+                }, 900);
+            }
+        }
+
+        function nextProblem() {
+            state.questionCounter++;
+            state.answered = false;
+            state.currentProblem = createProblem(state.selectedCat);
+
+            document.getElementById('user-answer').value = '';
+            document.getElementById('user-answer').disabled = false;
+            document.getElementById('btn-check').disabled = false;
+            document.getElementById('btn-check').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('hint-box').classList.add('hidden');
+            document.getElementById('feedback-box').classList.add('hidden');
+
+            initGuidedForCurrentProblem();
+            renderCurrentProblemText();
+            if (state.practiceMode === 'direct') {
+                document.getElementById('user-answer').focus();
+            }
+        }
+
+        function renderCurrentProblemText() {
+            const p = state.currentProblem;
+            if (!p) return;
+            const t = I18N[state.lang];
+
+            document.getElementById('q-number-badge').textContent = `#${state.questionCounter}`;
+            document.getElementById('q-category-badge').textContent = state.lang === 'es' ? p.catLabelEs : p.catLabelCa;
+            document.getElementById('q-solute-badge').textContent = p.solute.formula;
+            document.getElementById('q-statement').innerHTML = state.lang === 'es' ? p.statementEs : p.statementCa;
+            document.getElementById('q-atomic-masses').innerHTML = `<span>⚖️ ${t.atomicDataPrefix}</span> <span class="font-mono-num text-slate-700">${p.solute.atoms}</span>`;
+            document.getElementById('q-unit-label').textContent = p.unit;
+            document.getElementById('hint-content').innerHTML = state.lang === 'es' ? p.hintEs : p.hintCa;
+
+            if (state.practiceMode === 'guided') {
+                renderGuidedStep1();
+                renderFactorBoard();
+            }
+
+            if (state.answered) {
+                document.getElementById('fb-steps').innerHTML = state.lang === 'es' ? p.stepsEs : p.stepsCa;
+            }
+            renderMath();
+        }
+
+        function toggleHint() {
+            const box = document.getElementById('hint-box');
+            box.classList.toggle('hidden');
+            renderMath();
+        }
+
+        function handleEnterKey() {
+            if (!state.answered) {
+                checkAnswer();
+            } else {
+                nextProblem();
+            }
+        }
+
+        function checkAnswer() {
+            if (state.answered) return;
+            const rawInput = document.getElementById('user-answer').value.trim().replace(',', '.');
+            if (rawInput === '' || isNaN(Number(rawInput))) {
+                document.getElementById('user-answer').focus();
+                return;
+            }
+
+            const userVal = parseFloat(rawInput);
+            const p = state.currentProblem;
+            const expected = p.answer;
+            const relError = Math.abs(userVal - expected) / Math.max(Math.abs(expected), 1e-6);
+            const isCorrect = relError <= 0.035 || Math.abs(userVal - expected) <= 0.02;
+
+            state.answered = true;
+            document.getElementById('user-answer').disabled = true;
+            document.getElementById('btn-check').disabled = true;
+            document.getElementById('btn-check').classList.add('opacity-50', 'cursor-not-allowed');
+
+            if (isCorrect) {
+                state.hits++;
+                state.streak++;
+                if (state.streak > state.record) state.record = state.streak;
+                state.catCounts[p.cat]++;
+            } else {
+                state.streak = 0;
+            }
+
+            updateScoreUI();
+
+            // Guardar en el historial para el informe PDF
+            state.history.push({
+                num: state.questionCounter,
+                catEs: p.catLabelEs,
+                catCa: p.catLabelCa,
+                solute: p.solute.formula,
+                userVal: `${userVal} ${p.unit}`,
+                expectedVal: `${roundTo(expected, 2)} ${p.unit}`,
+                correct: isCorrect
+            });
+
+            // Mostrar Feedback
+            const fbBox = document.getElementById('feedback-box');
+            const t = I18N[state.lang];
+            fbBox.classList.remove('hidden', 'bg-emerald-50/90', 'border-emerald-300', 'text-emerald-950', 'bg-rose-50/90', 'border-rose-300', 'text-rose-950');
+
+            if (isCorrect) {
+                fbBox.classList.add('bg-emerald-50/90', 'border-emerald-300', 'text-emerald-950');
+                document.getElementById('fb-icon').textContent = '✅';
+                document.getElementById('fb-title').textContent = t.correctTitle;
+            } else {
+                fbBox.classList.add('bg-rose-50/90', 'border-rose-300', 'text-rose-950');
+                document.getElementById('fb-icon').textContent = '❌';
+                document.getElementById('fb-title').textContent = t.wrongTitle;
+            }
+
+            document.getElementById('fb-subtitle').innerHTML = `${t.yourValLabel} <strong>${userVal} ${p.unit}</strong> · ${t.expectedLabel} <strong>${roundTo(expected, 2)} ${p.unit}</strong>`;
+            document.getElementById('fb-steps').innerHTML = state.lang === 'es' ? p.stepsEs : p.stepsCa;
+
+            renderMath();
+        }
+
+        function updateScoreUI() {
+            document.getElementById('stat-hits').textContent = state.hits;
+            document.getElementById('stat-record').textContent = state.record;
+            document.getElementById('stat-streak').textContent = state.streak;
+            document.getElementById('stat-cat-conc').textContent = state.catCounts.conc;
+            document.getElementById('stat-cat-mass').textContent = state.catCounts.mass;
+            document.getElementById('stat-cat-chi').textContent = state.catCounts.chi;
+            document.getElementById('stat-cat-com').textContent = state.catCounts.com;
+            document.getElementById('stat-cat-dil').textContent = state.catCounts.dil;
+        }
+
+        function setProblemCategory(cat) {
+            state.selectedCat = cat;
+            ['all', 'conc', 'mass', 'chi', 'com', 'dil'].forEach(c => {
+                const btn = document.getElementById(`cat-btn-${c}`);
+                if (btn) {
+                    if (c === cat) {
+                        btn.className = "px-3 py-1.5 rounded-lg bg-indigo-50 text-[#4f46e5] font-bold transition";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition";
+                    }
+                }
+            });
+            nextProblem();
+        }
+
+        // =====================================================
+        // SIMULADOR REALISTA DE MATRAZ AFORADO (ESCALA Y COLOR)
+        // =====================================================
+        function initLabButtons() {
+            const container = document.getElementById('lab-solute-buttons');
+            const labIndices = [6, 8, 0, 7]; // CuSO4 (azul), KMnO4 (violeta), HCl/Fe (ámbar), CaCl2 (verde)
+            container.innerHTML = '';
+            labIndices.forEach(idx => {
+                const s = SOLUTES[idx];
+                const active = state.labSoluteIndex === idx;
+                const btn = document.createElement('button');
+                btn.onclick = () => { state.labSoluteIndex = idx; initLabButtons(); updateVirtualLab(); };
+                btn.className = `px-3 py-2 rounded-xl border text-xs font-bold transition flex flex-col items-center ${
+                    active ? 'bg-[#4f46e5] text-white border-[#4f46e5] shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`;
+                btn.innerHTML = `<span class="text-sm font-extrabold">${s.formula}</span><span class="text-[10px] opacity-80">${s.mm} g/mol</span>`;
+                container.appendChild(btn);
+            });
+        }
+
+        function setLabVolume(volMl) {
+            document.getElementById('lab-vol-slider').value = volMl;
+            updateVirtualLab();
+        }
+
+        function updateVirtualLab() {
+            const s = SOLUTES[state.labSoluteIndex];
+            const mass = parseFloat(document.getElementById('lab-mass-slider').value);
+            const volMl = parseFloat(document.getElementById('lab-vol-slider').value);
+            const volL = roundTo(volMl / 1000, 3);
+
+            document.getElementById('lab-mass-val').textContent = mass;
+            document.getElementById('lab-vol-val').textContent = volMl;
+            document.getElementById('lab-vol-l-val').textContent = volL;
+
+            // Resaltar botón de aforo estándar si coincide
+            [100, 250, 500, 1000].forEach(v => {
+                const b = document.getElementById(`btn-vol-${v}`);
+                if (b) {
+                    b.className = (v === volMl)
+                        ? "py-2 rounded-xl border text-xs font-bold transition bg-[#4f46e5] text-white border-[#4f46e5] shadow-sm"
+                        : "py-2 rounded-xl border text-xs font-bold transition bg-white text-slate-700 border-slate-200 hover:bg-slate-100";
+                }
+            });
+
+            const moles = mass / s.mm;
+            const molarity = moles / volL;
+            const gl = mass / volL;
+
+            document.getElementById('lab-out-moles').textContent = `${roundTo(moles, 2)} mol`;
+            document.getElementById('lab-out-molarity').textContent = `${roundTo(molarity, 2)} M`;
+            document.getElementById('lab-out-gl').textContent = `${roundTo(gl, 1)} g/L`;
+            document.getElementById('lab-molarity-inside').textContent = `${roundTo(molarity, 2)} M`;
+            document.getElementById('lab-svg-vol-text').textContent = `${volMl} mL`;
+            document.getElementById('lab-flask-size-badge').textContent = state.lang === 'ca' ? `Matràs de ${volMl} mL` : `Matraz de ${volMl} mL`;
+
+            // 1. ESCALADO DEL TAMAÑO DEL MATRAZ SEGÚN VOLUMEN (100 mL -> pequeño, 1000 mL -> grande)
+            // El líquido siempre permanece enrasado en la marca de aforo del cuello.
+            const scaleFactor = 0.64 + ((volMl - 100) / 900) * 0.38; // Rango de escala 0.64 a 1.02
+            const scalerEl = document.getElementById('lab-flask-scaler');
+            scalerEl.style.transform = `scale(${roundTo(scaleFactor, 3)})`;
+
+            // 2. OSCURECIMIENTO DEL COLOR SEGÚN LA CONCENTRACIÓN MOLAR (Ley de Beer-Lambert visual)
+            // Cuanto mayor es la molaridad M, mayor opacidad y menor luminosidad RGB (más oscuro)
+            const normConc = Math.min(molarity / 3.0, 1); // Normalizado de 0 a 3.0 M
+            const darkenFactor = 1 - (normConc * 0.58);  // Oscurece los canales RGB hasta un 58%
+            const r = Math.round(s.rgb[0] * darkenFactor);
+            const g = Math.round(s.rgb[1] * darkenFactor);
+            const b = Math.round(s.rgb[2] * darkenFactor);
+            const alpha = roundTo(0.22 + normConc * 0.73, 2); // Opacidad de 0.22 (muy diluido) a 0.95 (muy concentrado)
+
+            const svgLiquid = document.getElementById('lab-svg-liquid');
+            svgLiquid.setAttribute('fill', `rgb(${r}, ${g}, ${b})`);
+            svgLiquid.setAttribute('fill-opacity', alpha);
+
+            let intensityLabel = state.lang === 'ca' ? 'Diluïda (clar)' : 'Diluida (claro)';
+            if (normConc > 0.66) intensityLabel = state.lang === 'ca' ? 'Molt concentrada (fosc)' : 'Muy concentrada (oscuro)';
+            else if (normConc > 0.28) intensityLabel = state.lang === 'ca' ? 'Concentració mitjana' : 'Concentración media';
+            document.getElementById('lab-color-intensity-badge').textContent = intensityLabel;
+
+            // Ecuación en tiempo real con factores
+            const mathEl = document.getElementById('lab-live-math');
+            mathEl.innerHTML = `
+                $$M = \\frac{${mass}\\text{ g }${s.latex}}{${volMl}\\text{ mL}} \\cdot \\frac{1\\text{ mol }${s.latex}}{${s.mm}\\text{ g }${s.latex}} \\cdot \\frac{1000\\text{ mL}}{1\\text{ L}} = \\mathbf{${roundTo(molarity, 2)}\\text{ mol/L}}$$
+            `;
+            renderMath();
+        }
+
+        // =====================================================
+        // NAVEGACIÓN Y BILINGÜISMO (CATALÀ / CASTELLANO)
+        // =====================================================
+        function switchMainTab(tab) {
+            ['practice', 'lab', 'theory'].forEach(t => {
+                const sec = document.getElementById(`sec-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    sec.classList.remove('hidden');
+                    btn.className = "px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-[#4f46e5] text-white shadow-sm flex items-center gap-2";
+                } else {
+                    sec.classList.add('hidden');
+                    btn.className = "px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80 flex items-center gap-2";
+                }
+            });
+            document.getElementById('category-filter-box').style.display = tab === 'practice' ? 'flex' : 'none';
+            if (tab === 'lab') updateVirtualLab();
+            renderMath();
+        }
+
+        function setLanguage(lang) {
+            state.lang = lang;
+            const t = I18N[lang];
+
+            const btnCa = document.getElementById('btn-lang-ca');
+            const btnEs = document.getElementById('btn-lang-es');
+            if (lang === 'ca') {
+                btnCa.className = "px-3.5 py-1.5 rounded-full transition-all bg-white text-[#4f46e5] shadow-sm";
+                btnEs.className = "px-3.5 py-1.5 rounded-full transition-all text-slate-500 hover:text-slate-800";
+            } else {
+                btnEs.className = "px-3.5 py-1.5 rounded-full transition-all bg-white text-[#4f46e5] shadow-sm";
+                btnCa.className = "px-3.5 py-1.5 rounded-full transition-all text-slate-500 hover:text-slate-800";
+            }
+
+            document.getElementById('app-title').textContent = t.appTitle;
+            document.getElementById('app-subtitle').textContent = t.appSubtitle;
+            document.getElementById('lbl-hits').textContent = t.hits;
+            document.getElementById('lbl-record').textContent = t.record;
+            document.getElementById('lbl-streak').textContent = t.streak;
+            document.getElementById('lbl-time').textContent = t.time;
+            document.getElementById('lbl-student').textContent = t.student;
+            document.getElementById('student-name').placeholder = t.studentPh;
+            document.getElementById('lbl-cat1-pill').textContent = t.cat1Pill;
+            document.getElementById('lbl-cat-mass-pill').textContent = t.catMassPill;
+            document.getElementById('lbl-cat-chi-pill').textContent = t.catChiPill;
+            document.getElementById('lbl-cat2-pill').textContent = t.cat2Pill;
+            document.getElementById('lbl-cat3-pill').textContent = t.cat3Pill;
+            document.getElementById('lbl-pdf-btn').textContent = t.pdfBtn;
+
+            document.getElementById('lbl-tab-practice').textContent = t.tabPractice;
+            document.getElementById('lbl-tab-lab').textContent = t.tabLab;
+            document.getElementById('lbl-tab-theory').textContent = t.tabTheory;
+
+            document.getElementById('lbl-mode-select').textContent = t.modeSelect;
+            document.getElementById('lbl-mode-direct').textContent = t.modeDirect;
+            document.getElementById('lbl-mode-guided').textContent = t.modeGuided;
+            document.getElementById('lbl-guided-s1-title').textContent = t.guidedS1Title;
+            document.getElementById('lbl-guided-s2-title').textContent = t.guidedS2Title;
+            document.getElementById('lbl-guided-s2-desc').textContent = t.guidedS2Desc;
+            document.getElementById('lbl-factor-bank').textContent = t.factorBank;
+
+            document.getElementById('cat-btn-all').textContent = t.catAll;
+            document.getElementById('cat-btn-conc').textContent = t.catConc;
+            document.getElementById('cat-btn-mass').textContent = t.catMass;
+            document.getElementById('cat-btn-chi').textContent = t.catChi;
+            document.getElementById('cat-btn-com').textContent = t.catCom;
+            document.getElementById('cat-btn-dil').textContent = t.catDil;
+
+            document.getElementById('lbl-new-problem').textContent = t.newProblem;
+            document.getElementById('lbl-your-answer').textContent = t.yourAnswer;
+            document.getElementById('lbl-tolerance-note').textContent = t.toleranceNote;
+            document.getElementById('lbl-btn-check').textContent = t.btnCheck;
+            document.getElementById('lbl-btn-hint').textContent = t.btnHint;
+            document.getElementById('lbl-hint-title').textContent = t.hintTitle;
+            document.getElementById('lbl-solution-header').textContent = t.solutionHeader;
+            document.getElementById('lbl-next-btn').textContent = t.nextBtn;
+
+            document.getElementById('lab-title').textContent = t.labTitle;
+            document.getElementById('lab-desc').textContent = t.labDesc;
+            document.getElementById('lbl-lab-solute').textContent = t.labSolute;
+            document.getElementById('lbl-lab-mass').textContent = t.labMass;
+            document.getElementById('lbl-lab-vol').textContent = t.labVol;
+            document.getElementById('lbl-lab-live-calc').textContent = t.labLiveCalc;
+
+            renderCurrentProblemText();
+        }
+
+        // =====================================================
+        // CRONÓMETRO DE SESIÓN
+        // =====================================================
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function startTimer() {
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                if (state.timerRunning) {
+                    state.seconds++;
+                    document.getElementById('timer-display').textContent = formatTime(state.seconds);
+                }
+            }, 1000);
+        }
+
+        function toggleTimer() {
+            state.timerRunning = !state.timerRunning;
+            document.getElementById('btn-timer-toggle').textContent = state.timerRunning ? '⏸' : '▶';
+        }
+
+        function resetTimer() {
+            state.seconds = 0;
+            document.getElementById('timer-display').textContent = "00:00";
+        }
+
+        // =====================================================
+        // GENERADOR DE PDF DE SESIÓN (VENTANA LIMPIA)
+        // =====================================================
+        function generateSessionPDF() {
+            const studentName = document.getElementById('student-name').value.trim() || (state.lang === 'ca' ? 'Alumne/a sense especificar' : 'Alumno/a sin especificar');
+            const dateStr = new Date().toLocaleString(state.lang === 'ca' ? 'ca-ES' : 'es-ES');
+            const timeFormatted = formatTime(state.seconds);
+
+            const rowsHtml = state.history.length === 0
+                ? `<tr><td colspan="5" style="text-align:center; padding: 18px; color:#64748b;">No se han registrado ejercicios respondidos en esta sesión.</td></tr>`
+                : state.history.map(item => `
+                    <tr>
+                        <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:700;">#${item.num}</td>
+                        <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">${state.lang === 'ca' ? item.catCa : item.catEs} (${item.solute})</td>
+                        <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-family:monospace;">${item.userVal}</td>
+                        <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-family:monospace;">${item.expectedVal}</td>
+                        <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:700; color:${item.correct ? '#059669' : '#e11d48'};">
+                            ${item.correct ? '✓ Correcto' : '✗ Incorrecto'}
+                        </td>
+                    </tr>
+                `).join('');
+
+            const printWin = window.open('', '_blank', 'width=900,height=700');
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Informe de Sesión — ${studentName}</title>
+                    <style>
+                        body { font-family: 'Inter', -apple-system, sans-serif; color: #1e293b; margin: 32px; }
+                        .header { border-bottom: 2px solid #4f46e5; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+                        .title { font-size: 20px; font-weight: 800; color: #1e1b4b; margin: 0; }
+                        .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; }
+                        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+                        .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+                        .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; }
+                        .stat-val { font-size: 18px; font-weight: 800; color: #1e1b4b; margin-top: 4px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+                        th { background: #f1f5f9; text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; color: #475569; }
+                        .footer { margin-top: 36px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 14px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div>
+                            <h1 class="title">Informe de Práctica: Disoluciones (BAT_FQ 2.1)</h1>
+                            <div class="subtitle">Elena Ruiz Alfaro</div>
+                        </div>
+                        <div style="text-align:right; font-size:12px;">
+                            <div><strong>Alumno/a:</strong> ${studentName}</div>
+                            <div><strong>Fecha:</strong> ${dateStr}</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Aciertos Totales</div>
+                            <div class="stat-val">${state.hits}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Récord Racha</div>
+                            <div class="stat-val">${state.record} 🔥</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Tiempo Invertido</div>
+                            <div class="stat-val">${timeFormatted}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Desglose Categorías</div>
+                            <div style="font-size:11px; font-weight:700; margin-top:5px; line-height: 1.4;">
+                                Molaridad: ${state.catCounts.conc} · % y g/L: ${state.catCounts.mass} · $\\chi$: ${state.catCounts.chi} · Riqueza/ρ: ${state.catCounts.com} · Dilución: ${state.catCounts.dil}
+                            </div>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tipo de Ejercicio y Soluto</th>
+                                <th>Respuesta Alumno/a</th>
+                                <th>Resultado Esperado</th>
+                                <th>Evaluación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="footer">
+                        © 2026 Elena Ruiz Alfaro
+                    </div>
+                    <script>
+                        window.onload = function() { window.print(); };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
+        }
+
+        // Inicialización
+        window.onload = function() {
+            initLabButtons();
+            startTimer();
+            nextProblem();
+        };
+    </script>
+</body>
+</html>
